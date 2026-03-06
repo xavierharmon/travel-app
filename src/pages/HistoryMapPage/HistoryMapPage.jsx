@@ -4,7 +4,13 @@ import styles from "./HistoryMapPage.module.css";
 import { useTrips } from "@/hooks/useTrips";
 import { useGoogleMaps } from "@/hooks/useGoogleMaps";
 import { useRouteDrawer } from "@/hooks/useRouteDrawer";
-import { STOP_COLORS } from "@/constants";
+import {
+  STOP_COLORS,
+  TRAVEL_MODES,
+  TRAVEL_MODE_COLORS,
+  TRAVEL_MODE_LABELS,
+} from "@/constants";
+import { drawFlightArc, drawBoatRoute } from "@/utils/curveHelper";
 import Button from "@/components/common/Button";
 
 const TRIP_COLORS = [
@@ -47,16 +53,17 @@ export default function HistoryMapPage({ onBack }) {
   const [stats,        setStats]        = useState(null);
   const [mapMode,      setMapMode]      = useState("lines");
   const [drawing,      setDrawing]      = useState(false);
+  const [activeModes,  setActiveModes]  = useState(
+    new Set([TRAVEL_MODES.DRIVE, TRAVEL_MODES.FLIGHT, TRAVEL_MODES.BOAT])
+  );
 
   // Compute summary stats whenever trips change
   useEffect(() => {
     if (!trips.length) return;
-
     const totalStops = trips.reduce((sum, t) => {
       return sum + [t.origin, ...(t.stops || []), t.destination]
         .filter(s => s?.lat).length;
     }, 0);
-
     const totalPhotos = trips.reduce((sum, t) => {
       const tripPhotos = (t.photos || []).length;
       const stopPhotos = (t.stops || []).reduce((s, stop) =>
@@ -64,14 +71,12 @@ export default function HistoryMapPage({ onBack }) {
       );
       return sum + tripPhotos + stopPhotos;
     }, 0);
-
     setStats({ totalTrips: trips.length, totalStops, totalPhotos });
   }, [trips]);
 
-  // Step 1: Initialize the map as soon as Google Maps is ready
+  // Step 1: Initialize map when Google Maps is ready
   useEffect(() => {
     if (!isReady || !mapRef.current) return;
-
     if (!gmapRef.current) {
       gmapRef.current = new window.google.maps.Map(mapRef.current, {
         center:            { lat: 39.5, lng: -98.35 },
@@ -85,21 +90,32 @@ export default function HistoryMapPage({ onBack }) {
     }
   }, [isReady]);
 
-  // Step 2: Draw trips once BOTH the map AND trips are ready
-  // Reruns whenever trips load, filter changes, or mode toggles
+  // Step 2: Draw trips once map AND trips are both ready
   useEffect(() => {
     if (!isReady || !gmapRef.current || !trips.length) return;
     drawAllTrips(activeTripId);
-  }, [isReady, trips, activeTripId, mapMode]);
+  }, [isReady, trips, activeTripId, mapMode, activeModes]);
 
   function clearOverlays() {
     overlaysRef.current.forEach(o => o.setMap(null));
     overlaysRef.current = [];
   }
 
+  function toggleMode(mode) {
+    setActiveModes(prev => {
+      const next = new Set(prev);
+      if (next.has(mode)) {
+        if (next.size === 1) return prev; // always keep at least one active
+        next.delete(mode);
+      } else {
+        next.add(mode);
+      }
+      return next;
+    });
+  }
+
   const drawAllTrips = useCallback(async (filterTripId) => {
     if (!gmapRef.current) return;
-
     clearOverlays();
     setDrawing(true);
 
@@ -107,7 +123,6 @@ export default function HistoryMapPage({ onBack }) {
       ? trips.filter(t => t.id === filterTripId)
       : trips;
 
-    // Debug — log which trips have coordinates
     console.log("[HistoryMap] Drawing", tripsToShow.length, "trips");
     tripsToShow.forEach(t => {
       console.log(
@@ -137,7 +152,7 @@ export default function HistoryMapPage({ onBack }) {
 
       const color = TRIP_COLORS[tripIndex % TRIP_COLORS.length];
 
-      // Place markers or glow circles depending on mode
+      // Place markers or glow circles depending on display mode
       stops.forEach((stop, stopIndex) => {
         const isOrigin = stopIndex === 0;
         const isDest   = stopIndex === stops.length - 1;
@@ -170,11 +185,16 @@ export default function HistoryMapPage({ onBack }) {
               path:         window.google.maps.SymbolPath.CIRCLE,
               scale:        isOrigin || isDest ? 5 : 4,
               fillColor:    pinColor,
-              fillOpacity:  1,
+              fillOpacity:  0.9,
               strokeColor:  "#ffffff",
-              strokeWeight: 1.5,
+              strokeWeight: 1,
             },
           });
+
+          // Get travel mode for this stop
+          const travelMode = stopIndex > 0
+            ? (stop.travelMode || TRAVEL_MODES.DRIVE)
+            : null;
 
           const infoWindow = new window.google.maps.InfoWindow({
             content: `
@@ -188,6 +208,12 @@ export default function HistoryMapPage({ onBack }) {
                 <strong style="font-size:13px">
                   ${stop.name.split(",")[0]}
                 </strong>
+                ${travelMode ? `
+                  <div style="font-size:11px;margin-top:4px;
+                              color:${TRAVEL_MODE_COLORS[travelMode]};
+                              font-weight:600">
+                    ${TRAVEL_MODE_LABELS[travelMode]}
+                  </div>` : ""}
                 ${stop.description
                   ? `<p style="font-size:12px;color:#475569;margin-top:4px;
                                line-height:1.4">
@@ -210,55 +236,101 @@ export default function HistoryMapPage({ onBack }) {
         hasPoints = true;
       });
 
-      // Draw road-following route — uses cache if available, API if not
+      // Draw route segments between each consecutive pair of stops
       if (stops.length >= 2) {
-        try {
-          const result = await fetchAndDrawRoute(
-            gmapRef.current,
-            stops,
-            color
-          );
-          if (result?.polyline) {
-            // Adjust line style for heatmap mode
-            if (mapMode === "heatmap") {
-              result.polyline.setOptions({
-                strokeOpacity: 0.3,
-                strokeWeight:  2,
-              });
+        for (let i = 1; i < stops.length; i++) {
+          const from = stops[i - 1];
+          const to   = stops[i];
+          const mode = to.travelMode || TRAVEL_MODES.DRIVE;
+
+          // Skip segments whose mode is filtered out
+          if (!activeModes.has(mode)) continue;
+
+          if (mode === TRAVEL_MODES.FLIGHT) {
+            // Curved amber arc — no API call
+            const lines = drawFlightArc(
+              gmapRef.current,
+              from,
+              to,
+              TRAVEL_MODE_COLORS.FLIGHT
+            );
+            if (lines) {
+              if (mapMode === "heatmap") {
+                lines.forEach(l => l.setOptions({ strokeOpacity: 0.2, strokeWeight: 1 }));
+              }
+              overlaysRef.current.push(...lines);
             }
-            overlaysRef.current.push(result.polyline);
+
+          } else if (mode === TRAVEL_MODES.BOAT) {
+            // Dashed cyan arc — no API call
+            const lines = drawBoatRoute(
+              gmapRef.current,
+              from,
+              to,
+              TRAVEL_MODE_COLORS.BOAT
+            );
+            if (lines) {
+              if (mapMode === "heatmap") {
+                lines.forEach(l => l.setOptions({ strokeOpacity: 0.2, strokeWeight: 1 }));
+              }
+              overlaysRef.current.push(...lines);
+            }
+
+          } else {
+            // DRIVE — road following route via cache or Routes API
+            try {
+              const result = await fetchAndDrawRoute(
+                gmapRef.current,
+                [from, to],
+                color
+              );
+
+              const polylines = result?.polylines || (result?.polyline ? [result.polyline] : []);
+
+              polylines.filter(Boolean).forEach(p => {
+                if (mapMode === "heatmap") {
+                  p.setOptions({ strokeOpacity: 0.3, strokeWeight: 2 });
+                }
+                overlaysRef.current.push(p);
+              });
+
+            } catch (err) {
+              console.warn(
+                `[HistoryMap] Drive route failed for "${trip.name}" segment ${i}:`,
+                err.message
+              );
+              // Fall back to straight dashed line
+              const fallback = new window.google.maps.Polyline({
+                path:          [from, to].map(s => ({ lat: s.lat, lng: s.lng })),
+                geodesic:      true,
+                strokeColor:   color,
+                strokeOpacity: mapMode === "heatmap" ? 0.15 : 0.4,
+                strokeWeight:  mapMode === "heatmap" ? 1   : 2,
+                icons: [{
+                  icon: {
+                    path:          "M 0,-1 0,1",
+                    strokeOpacity: 1,
+                    strokeColor:   color,
+                    scale:         2,
+                  },
+                  offset: "0",
+                  repeat: "16px",
+                }],
+                map: gmapRef.current,
+              });
+              overlaysRef.current.push(fallback);
+            }
           }
-        } catch (err) {
-          console.warn(
-            `[HistoryMap] Route fetch failed for "${trip.name}":`,
-            err.message
-          );
-          // Fall back to straight geodesic line so something always shows
-          const fallback = new window.google.maps.Polyline({
-            path:          stops.map(s => ({ lat: s.lat, lng: s.lng })),
-            geodesic:      true,
-            strokeColor:   color,
-            strokeOpacity: mapMode === "heatmap" ? 0.2 : 0.5,
-            strokeWeight:  mapMode === "heatmap" ? 1   : 2,
-            icons: [{
-              icon:   { path: "M 0,-1 0,1", strokeOpacity: 1, scale: 3 },
-              offset: "0",
-              repeat: "20px",
-            }],
-            map: gmapRef.current,
-          });
-          overlaysRef.current.push(fallback);
         }
       }
     }
 
-    // Auto-fit map to show all plotted points
     if (hasPoints) {
       gmapRef.current.fitBounds(allBounds, 60);
     }
 
     setDrawing(false);
-  }, [trips, mapMode, fetchAndDrawRoute]);
+  }, [trips, mapMode, activeModes, fetchAndDrawRoute]);
 
   const tripsWithCoords = trips.filter(t =>
     [t.origin, t.destination].some(s => s?.lat)
@@ -284,7 +356,31 @@ export default function HistoryMapPage({ onBack }) {
           )}
         </div>
 
-        {/* Mode toggle */}
+        {/* Travel mode filter toggles */}
+        <div className={styles.modeFilters}>
+          {Object.values(TRAVEL_MODES).map(mode => (
+            <button
+              key={mode}
+              className={styles.modeFilterBtn}
+              onClick={() => toggleMode(mode)}
+              style={{
+                background:  activeModes.has(mode)
+                  ? TRAVEL_MODE_COLORS[mode]
+                  : "var(--color-surface-2)",
+                borderColor: activeModes.has(mode)
+                  ? TRAVEL_MODE_COLORS[mode]
+                  : "var(--color-border)",
+                color:       activeModes.has(mode)
+                  ? "#fff"
+                  : "var(--color-text-muted)",
+              }}
+            >
+              {TRAVEL_MODE_LABELS[mode]}
+            </button>
+          ))}
+        </div>
+
+        {/* Lines / Glow display mode toggle */}
         <div className={styles.modeToggle}>
           <button
             className={`${styles.modeBtn} ${mapMode === "lines" ? styles.modeBtnActive : ""}`}
@@ -308,7 +404,7 @@ export default function HistoryMapPage({ onBack }) {
         <aside className={styles.sidebar}>
           <p className={styles.sidebarLabel}>Filter by trip</p>
 
-          {/* All trips button */}
+          {/* All trips */}
           <button
             className={`${styles.tripBtn} ${activeTripId === null ? styles.tripBtnActive : ""}`}
             onClick={() => setActiveTripId(null)}
@@ -323,7 +419,7 @@ export default function HistoryMapPage({ onBack }) {
             </span>
           </button>
 
-          {/* One button per trip */}
+          {/* One per trip */}
           {tripsWithCoords.map((trip, i) => (
             <button
               key={trip.id}
@@ -349,10 +445,26 @@ export default function HistoryMapPage({ onBack }) {
 
           {tripsWithCoords.length === 0 && (
             <p className={styles.emptyState}>
-              No trips with locations yet. Add an origin and destination
-              to a trip to see it here.
+              No trips with locations yet. Add an origin and
+              destination to a trip to see it here.
             </p>
           )}
+
+          {/* Travel mode legend */}
+          <div className={styles.legendSection}>
+            <p className={styles.sidebarLabel}>Travel modes</p>
+            {Object.values(TRAVEL_MODES).map(mode => (
+              <div key={mode} className={styles.legendItem}>
+                <span
+                  className={styles.legendLine}
+                  style={{ background: TRAVEL_MODE_COLORS[mode] }}
+                />
+                <span className={styles.legendLabel}>
+                  {TRAVEL_MODE_LABELS[mode]}
+                </span>
+              </div>
+            ))}
+          </div>
         </aside>
 
         {/* Map area */}
@@ -360,25 +472,19 @@ export default function HistoryMapPage({ onBack }) {
           {mapsError && (
             <div className={styles.errorOverlay}>{mapsError}</div>
           )}
-
           {!isReady && !mapsError && (
             <div className={styles.loadingOverlay}>Loading map…</div>
           )}
-
-          {/* Drawing indicator — floats over the map while routes load */}
           {isReady && drawing && (
             <div className={styles.drawingIndicator}>
               Drawing routes…
             </div>
           )}
-
-          {/* No trips message */}
           {isReady && !drawing && tripsWithCoords.length === 0 && (
             <div className={styles.loadingOverlay}>
               No trips to display yet.
             </div>
           )}
-
           <div ref={mapRef} className={styles.map} />
         </div>
 

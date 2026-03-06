@@ -1,8 +1,10 @@
+// src/components/trips/StopCard/StopCard.jsx
 import { useState } from "react";
 import styles from "./StopCard.module.css";
 import PlaceInput from "@/components/trips/PlaceInput";
 import PhotoGrid from "@/components/common/PhotoGrid";
 import Button from "@/components/common/Button";
+import { TRAVEL_MODES, TRAVEL_MODE_LABELS } from "@/constants";
 
 export default function StopCard({ stop, index, onChange, onRemove }) {
   const [expanded, setExpanded] = useState(false);
@@ -28,6 +30,22 @@ export default function StopCard({ stop, index, onChange, onRemove }) {
           {expanded ? "▲" : "▼"}
         </Button>
         <Button variant="danger" size="sm" onClick={onRemove}>✕</Button>
+      </div>
+
+      {/* Travel mode selector — how did you get to this stop */}
+      <div className={styles.travelModeRow}>
+        <span className={styles.travelModeLabel}>Got here by</span>
+        <div className={styles.travelModeBtns}>
+          {Object.values(TRAVEL_MODES).map(mode => (
+            <button
+              key={mode}
+              className={`${styles.travelModeBtn} ${(stop.travelMode || TRAVEL_MODES.DRIVE) === mode ? styles.travelModeBtnActive : ""}`}
+              onClick={() => onChange({ ...stop, travelMode: mode })}
+            >
+              {TRAVEL_MODE_LABELS[mode]}
+            </button>
+          ))}
+        </div>
       </div>
 
       {expanded && (

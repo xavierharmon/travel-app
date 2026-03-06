@@ -1,61 +1,45 @@
-.card {
-  background:    var(--color-surface-2);
-  border-radius: var(--radius-lg);
-  border:        1px solid var(--color-border);
-  overflow:      hidden;
-  margin-bottom: var(--space-sm);
-}
+/* Add these to the bottom of StopCard.module.css */
 
-.header {
+.travelModeRow {
   display:     flex;
-  align-items: flex-end;
+  align-items: center;
   gap:         var(--space-sm);
-  padding:     var(--space-md);
+  padding:     var(--space-xs) var(--space-md) var(--space-sm);
+  flex-wrap:   wrap;
 }
 
-.dot {
-  width:         14px;
-  height:        14px;
-  border-radius: 50%;
-  background:    var(--color-primary);
-  flex-shrink:   0;
-  margin-bottom: 10px;
+.travelModeLabel {
+  font-size:   var(--font-size-xs);
+  color:       var(--color-text-subtle);
+  font-weight: 500;
+  flex-shrink: 0;
 }
 
-.inputWrap { flex: 1; }
-
-.expandBtn { margin-bottom: 2px; }
-
-.details {
-  padding:      0 var(--space-md) var(--space-md);
-  display:      flex;
-  flex-direction: column;
-  gap:          var(--space-sm);
-  border-top:   1px solid var(--color-border);
-  padding-top:  var(--space-md);
+.travelModeBtns {
+  display: flex;
+  gap:     var(--space-xs);
+  flex-wrap: wrap;
 }
 
-.detailLabel {
-  font-size:      var(--font-size-xs);
-  font-weight:    600;
-  color:          var(--color-text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.textarea {
-  width:         100%;
+.travelModeBtn {
+  padding:       4px 10px;
+  border-radius: var(--radius-sm);
+  font-size:     var(--font-size-xs);
+  font-weight:   600;
+  color:         var(--color-text-muted);
   background:    var(--color-surface);
   border:        1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  padding:       8px 12px;
-  color:         var(--color-text);
-  font-size:     var(--font-size-sm);
-  resize:        vertical;
-  outline:       none;
-  line-height:   1.6;
-  transition:    border-color var(--transition);
+  cursor:        pointer;
+  transition:    all var(--transition);
 }
 
-.textarea:focus { border-color: var(--color-border-focus); }
-.textarea::placeholder { color: var(--color-text-subtle); }
+.travelModeBtn:hover {
+  border-color: var(--color-primary);
+  color:        var(--color-text);
+}
+
+.travelModeBtnActive {
+  background:   var(--color-primary) !important;
+  border-color: var(--color-primary) !important;
+  color:        #fff !important;
+}

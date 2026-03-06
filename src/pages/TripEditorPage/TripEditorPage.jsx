@@ -1,128 +1,181 @@
-// src/pages/TripEditorPage/TripEditorPage.jsx
-import { useState, useCallback } from "react";
-import styles from "./TripEditorPage.module.css";
-import { useTrips } from "@/hooks/useTrips";
+// src/components/trips/TripEditor/TripEditor.jsx
+import styles from "./TripEditor.module.css";
+import PlaceInput from "@/components/trips/PlaceInput";
+import StopCard from "@/components/trips/StopCard";
+import PhotoGrid from "@/components/common/PhotoGrid";
 import { generateId } from "@/utils/imageHelpers";
-import TripEditor from "@/components/trips/TripEditor";
-import Button from "@/components/common/Button";
-import { useGoogleMaps } from "@/hooks/useGoogleMaps";
+import { TRAVEL_MODES, TRAVEL_MODE_LABELS, TRAVEL_MODE_COLORS } from "@/constants";
 
-export default function TripEditorPage({ trip, onBack, onViewMap }) {
-  const { isReady, error: mapsError } = useGoogleMaps();
-  const { addTrip, updateTrip } = useTrips();
+export default function TripEditor({ form, errors, onChange }) {
+  function set(field, value) {
+    onChange({ ...form, [field]: value });
+  }
 
-  // isNew is based on whether the trip coming in has an id
-  const isNew = !trip?.id;
-
-  const [form, setForm] = useState(() =>
-    trip ? { ...trip } : {
-      id:          null,
+  function addStop() {
+    const newStop = {
+      id:          generateId(),
       name:        "",
-      date:        new Date().toISOString().slice(0, 10),
+      lat:         null,
+      lng:         null,
       description: "",
       photos:      [],
-      origin:      null,
-      destination: null,
-      stops:       [],
-    }
-  );
-
-  const [errors, setErrors] = useState({});
-
-  const handleFormChange = useCallback((updated) => {
-    setForm(updated);
-  }, []);
-
-  function validate() {
-    const errs = {};
-    if (!form.name?.trim()) errs.name = "Trip name is required.";
-    setErrors(errs);
-    return Object.keys(errs).length === 0;
+      travelMode:  TRAVEL_MODES.DRIVE,
+    };
+    set("stops", [...(form.stops || []), newStop]);
   }
 
-  function handleSave() {
-    if (!validate()) return;
-
-    if (isNew) {
-      addTrip({ ...form, id: generateId() });
-    } else {
-      updateTrip({ ...form });
-    }
-
-    onBack();
+  function updateStop(id, updated) {
+    set("stops", form.stops.map(s => s.id === id ? updated : s));
   }
+
+  function removeStop(id) {
+    set("stops", form.stops.filter(s => s.id !== id));
+  }
+
+  if (!form) return null;
 
   return (
-    <div className={styles.page}>
-      <div className={styles.inner}>
+    <div className={styles.editor}>
 
-        {/* Top bar */}
-        <div className={styles.topBar}>
-          <Button variant="ghost" onClick={onBack}>← Back</Button>
-          <div className={styles.topActions}>
-            <Button variant="secondary" onClick={() => onViewMap(form)}>
-              Preview Map
-            </Button>
-            <Button variant="primary" onClick={handleSave}>
-              {isNew ? "Save Trip" : "Update Trip"}
-            </Button>
-          </div>
-        </div>
-
-        {/* Maps loading */}
-        {!isReady && !mapsError && (
-          <p style={{
-            color: "var(--color-text-muted)",
-            fontSize: 13,
-            marginBottom: 12
-          }}>
-            Loading location search…
-          </p>
-        )}
-
-        {/* Maps error */}
-        {mapsError && (
-          <p style={{
-            color: "var(--color-danger)",
-            fontSize: 13,
-            marginBottom: 12
-          }}>
-            {mapsError}
-          </p>
-        )}
-
-        {/* Validation errors */}
-        {errors.name && (
-          <div style={{
-            background:   "rgba(239,68,68,0.1)",
-            border:       "1px solid var(--color-danger)",
-            borderRadius: "var(--radius-md)",
-            padding:      "10px 14px",
-            marginBottom: 12,
-            fontSize:     13,
-            color:        "var(--color-danger)"
-          }}>
-            ⚠ {errors.name}
-          </div>
-        )}
-
-        {/* Form */}
-        {isReady && (
-          <TripEditor
-            form={form}
-            errors={errors}
-            onChange={handleFormChange}
-          />
-        )}
-
-        {/* Bottom save */}
-        <div className={styles.bottomActions}>
-          <Button variant="primary" size="lg" fullWidth onClick={handleSave}>
-            {isNew ? "Save Trip" : "Update Trip"}
-          </Button>
-        </div>
-
+      {/* ── Trip Name ─────────────────────────── */}
+      <div className={styles.nameRow}>
+        <input
+          className={`${styles.nameInput} ${errors?.name ? styles.nameInputError : ""}`}
+          value={form.name || ""}
+          onChange={e => set("name", e.target.value)}
+          placeholder="Trip Name"
+        />
+        {errors?.name && <p className={styles.errorText}>{errors.name}</p>}
       </div>
+
+      {/* ── Date and Description ──────────────── */}
+      <section className={styles.section}>
+        <div className={styles.field}>
+          <label className={styles.label}>Date</label>
+          <input
+            type="date"
+            className={styles.input}
+            value={form.date || ""}
+            onChange={e => set("date", e.target.value)}
+          />
+        </div>
+        <div className={styles.field}>
+          <label className={styles.label}>Description / Notes</label>
+          <textarea
+            className={styles.textarea}
+            value={form.description || ""}
+            onChange={e => set("description", e.target.value)}
+            placeholder="What made this trip special?"
+            rows={4}
+          />
+        </div>
+      </section>
+
+      {/* ── Trip Photos ───────────────────────── */}
+      <section className={styles.section}>
+        <h3 className={styles.sectionTitle}>Trip Photos</h3>
+        <PhotoGrid
+          photos={form.photos || []}
+          onChange={photos => set("photos", photos)}
+        />
+      </section>
+
+      {/* ── Route Builder ─────────────────────── */}
+      <section className={styles.section}>
+        <h3 className={styles.sectionTitle}>Route</h3>
+
+        {/* Origin — no travel mode, this is the starting point */}
+        <div className={styles.routeRow}>
+          <span className={`${styles.routeDot} ${styles.originDot}`} />
+          <div className={styles.routeField}>
+            <PlaceInput
+              label="Origin"
+              value={form.origin}
+              onSelect={v => set("origin", v)}
+              placeholder="Where did you start?"
+            />
+          </div>
+        </div>
+
+        {/* Connector line from origin down to first stop */}
+        <div className={styles.connectorLineOnly} />
+
+        {/* Intermediate stops — each has its own travel mode */}
+        {(form.stops || []).length > 0 && (
+          <div className={styles.connectorGroup}>
+            {form.stops.map((stop, i) => (
+              <div key={stop.id} className={styles.stopRow}>
+                <div className={styles.connectorLeft}>
+                  <span className={styles.connectorLine} />
+                  <span className={`${styles.routeDot} ${styles.stopDot}`} />
+                  <span className={styles.connectorLine} />
+                </div>
+                <div className={styles.stopCardWrap}>
+                  <StopCard
+                    stop={stop}
+                    index={i}
+                    onChange={updated => updateStop(stop.id, updated)}
+                    onRemove={() => removeStop(stop.id)}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Add Stop button */}
+        <div className={styles.addStopRow}>
+          <span className={styles.connectorLineShort} />
+          <button className={styles.addStopBtn} onClick={addStop}>
+            <span className={styles.addStopIcon}>+</span>
+            Add Stop
+          </button>
+          <span className={styles.connectorLineShort} />
+        </div>
+
+        {/* Destination — includes travel mode selector for the final leg */}
+        <div className={styles.routeRow}>
+          <span className={`${styles.routeDot} ${styles.destDot}`} />
+          <div className={styles.routeField}>
+            <PlaceInput
+              label="Destination"
+              value={form.destination}
+              onSelect={v => set("destination", v)}
+              placeholder="Where did you end up?"
+            />
+
+            {/* Travel mode for the final leg */}
+            <div className={styles.travelModeRow}>
+              <span className={styles.travelModeLabel}>Got here by</span>
+              <div className={styles.travelModeBtns}>
+                {Object.values(TRAVEL_MODES).map(mode => {
+                  const isActive =
+                    (form.destinationTravelMode || TRAVEL_MODES.DRIVE) === mode;
+                  return (
+                    <button
+                      key={mode}
+                      className={styles.travelModeBtn}
+                      style={{
+                        background:  isActive
+                          ? TRAVEL_MODE_COLORS[mode]
+                          : "var(--color-surface-2)",
+                        borderColor: isActive
+                          ? TRAVEL_MODE_COLORS[mode]
+                          : "var(--color-border)",
+                        color:       isActive ? "#fff" : "var(--color-text-muted)",
+                      }}
+                      onClick={() => set("destinationTravelMode", mode)}
+                    >
+                      {TRAVEL_MODE_LABELS[mode]}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </section>
     </div>
   );
 }

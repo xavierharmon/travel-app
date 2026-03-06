@@ -1,9 +1,11 @@
+// src/components/trips/TripEditor/TripEditor.jsx
 import styles from "./TripEditor.module.css";
 import PlaceInput from "@/components/trips/PlaceInput";
 import StopCard from "@/components/trips/StopCard";
 import PhotoGrid from "@/components/common/PhotoGrid";
 import Button from "@/components/common/Button";
 import { generateId } from "@/utils/imageHelpers";
+import { TRAVEL_MODES, TRAVEL_MODE_LABELS, TRAVEL_MODE_COLORS } from "@/constants";
 
 export default function TripEditor({ form, errors, onChange }) {
   function set(field, value) {
@@ -18,6 +20,7 @@ export default function TripEditor({ form, errors, onChange }) {
       lng:         null,
       description: "",
       photos:      [],
+      travelMode:  TRAVEL_MODES.DRIVE,
     };
     set("stops", [...(form.stops || []), newStop]);
   }
@@ -30,13 +33,12 @@ export default function TripEditor({ form, errors, onChange }) {
     set("stops", form.stops.filter(s => s.id !== id));
   }
 
-  // Guard — if form is undefined don't render anything
   if (!form) return null;
 
   return (
     <div className={styles.editor}>
 
-      {/* Trip Name */}
+      {/* ── Trip Name ─────────────────────────── */}
       <div className={styles.nameRow}>
         <input
           className={`${styles.nameInput} ${errors?.name ? styles.nameInputError : ""}`}
@@ -47,7 +49,7 @@ export default function TripEditor({ form, errors, onChange }) {
         {errors?.name && <p className={styles.errorText}>{errors.name}</p>}
       </div>
 
-      {/* Date and Description */}
+      {/* ── Date and Description ──────────────── */}
       <section className={styles.section}>
         <div className={styles.field}>
           <label className={styles.label}>Date</label>
@@ -70,7 +72,7 @@ export default function TripEditor({ form, errors, onChange }) {
         </div>
       </section>
 
-      {/* Trip Photos */}
+      {/* ── Trip Photos ───────────────────────── */}
       <section className={styles.section}>
         <h3 className={styles.sectionTitle}>Trip Photos</h3>
         <PhotoGrid
@@ -79,11 +81,11 @@ export default function TripEditor({ form, errors, onChange }) {
         />
       </section>
 
-      {/* Route Builder */}
+      {/* ── Route Builder ─────────────────────── */}
       <section className={styles.section}>
         <h3 className={styles.sectionTitle}>Route</h3>
 
-        {/* Origin */}
+        {/* Origin — no travel mode, this is the start */}
         <div className={styles.routeRow}>
           <span className={`${styles.routeDot} ${styles.originDot}`} />
           <div className={styles.routeField}>
@@ -96,7 +98,10 @@ export default function TripEditor({ form, errors, onChange }) {
           </div>
         </div>
 
-        {/* Stops */}
+        {/* Connector line from origin down */}
+        <div className={styles.connectorLineOnly} />
+
+        {/* Intermediate stops */}
         {(form.stops || []).length > 0 && (
           <div className={styles.connectorGroup}>
             {form.stops.map((stop, i) => (
@@ -119,7 +124,7 @@ export default function TripEditor({ form, errors, onChange }) {
           </div>
         )}
 
-        {/* Add Stop Button */}
+        {/* Add Stop button */}
         <div className={styles.addStopRow}>
           <span className={styles.connectorLineShort} />
           <button className={styles.addStopBtn} onClick={addStop}>
@@ -129,7 +134,7 @@ export default function TripEditor({ form, errors, onChange }) {
           <span className={styles.connectorLineShort} />
         </div>
 
-        {/* Destination */}
+        {/* Destination — has travel mode selector */}
         <div className={styles.routeRow}>
           <span className={`${styles.routeDot} ${styles.destDot}`} />
           <div className={styles.routeField}>
@@ -139,10 +144,33 @@ export default function TripEditor({ form, errors, onChange }) {
               onSelect={v => set("destination", v)}
               placeholder="Where did you end up?"
             />
+            {/* Travel mode for the last leg — how did you get to destination */}
+            <div className={styles.travelModeRow}>
+              <span className={styles.travelModeLabel}>Got here by</span>
+              <div className={styles.travelModeBtns}>
+                {Object.values(TRAVEL_MODES).map(mode => {
+                  const isActive = (form.destinationTravelMode || TRAVEL_MODES.DRIVE) === mode;
+                  return (
+                    <button
+                      key={mode}
+                      className={styles.travelModeBtn}
+                      style={{
+                        background:  isActive ? TRAVEL_MODE_COLORS[mode] : "var(--color-surface-2)",
+                        borderColor: isActive ? TRAVEL_MODE_COLORS[mode] : "var(--color-border)",
+                        color:       isActive ? "#fff"                   : "var(--color-text-muted)",
+                      }}
+                      onClick={() => set("destinationTravelMode", mode)}
+                    >
+                      {TRAVEL_MODE_LABELS[mode]}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
           </div>
         </div>
-      </section>
 
+      </section>
     </div>
   );
 }

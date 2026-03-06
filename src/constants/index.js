@@ -1,3 +1,4 @@
+// src/constants/index.js
 export const STORAGE_KEY     = "road_trip_memories_v1";
 export const ROUTE_CACHE_KEY = "road_trip_routes_v1";
 
@@ -12,6 +13,24 @@ export const STOP_COLORS = {
   ORIGIN:      "#22c55e",
   STOP:        "#6366f1",
   DESTINATION: "#ef4444",
+};
+
+export const TRAVEL_MODES = {
+  DRIVE:  "DRIVE",
+  FLIGHT: "FLIGHT",
+  BOAT:   "BOAT",
+};
+
+export const TRAVEL_MODE_COLORS = {
+  DRIVE:  "#6366f1",  // indigo
+  FLIGHT: "#f59e0b",  // amber
+  BOAT:   "#06b6d4",  // cyan
+};
+
+export const TRAVEL_MODE_LABELS = {
+  DRIVE:  "🚗 Drive",
+  FLIGHT: "✈️ Flight",
+  BOAT:   "⛵ Boat",
 };
 
 export const MAP_DEFAULTS = {

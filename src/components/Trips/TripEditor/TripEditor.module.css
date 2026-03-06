@@ -25,10 +25,10 @@
   font-family:   var(--font-sans);
 }
 
-.nameInput:focus         { border-bottom-color: var(--color-primary); }
-.nameInput::placeholder  { color: var(--color-text-subtle); }
-.nameInputError          { border-bottom-color: var(--color-danger) !important; }
-.errorText               { color: var(--color-danger); font-size: var(--font-size-xs); }
+.nameInput:focus          { border-bottom-color: var(--color-primary); }
+.nameInput::placeholder   { color: var(--color-text-subtle); }
+.nameInputError           { border-bottom-color: var(--color-danger) !important; }
+.errorText                { color: var(--color-danger); font-size: var(--font-size-xs); }
 
 /* ── Sections ─────────────────────────────────── */
 .section {
@@ -90,7 +90,7 @@
   font-family:   var(--font-sans);
 }
 
-.textarea:focus       { border-color: var(--color-border-focus); }
+.textarea:focus        { border-color: var(--color-border-focus); }
 .textarea::placeholder { color: var(--color-text-subtle); }
 
 /* ── Route builder ────────────────────────────── */
@@ -111,8 +111,15 @@
 .originDot { background: var(--color-success); }
 .stopDot   { background: var(--color-primary); }
 .destDot   { background: var(--color-danger); }
-
 .routeField { flex: 1; }
+
+/* Thin connector line between origin and first stop */
+.connectorLineOnly {
+  width:       2px;
+  height:      12px;
+  background:  var(--color-border);
+  margin-left: 6px;
+}
 
 /* Connector lines between stops */
 .connectorGroup {
@@ -148,11 +155,11 @@
 
 /* Add stop row */
 .addStopRow {
-  display:         flex;
-  flex-direction:  column;
-  align-items:     center;
-  gap:             0;
-  margin-left:     6px; /* align with connector */
+  display:        flex;
+  flex-direction: column;
+  align-items:    center;
+  gap:            0;
+  margin-left:    6px;
 }
 
 .connectorLineShort {
@@ -173,7 +180,8 @@
   color:           var(--color-text-subtle);
   font-size:       var(--font-size-sm);
   font-family:     var(--font-sans);
-  transition:      border-color var(--transition), color var(--transition), background var(--transition);
+  transition:      border-color var(--transition), color var(--transition),
+                   background var(--transition);
   cursor:          pointer;
   margin:          var(--space-xs) 0;
 }
@@ -188,4 +196,37 @@
   font-size:   18px;
   line-height: 1;
   font-weight: 300;
+}
+
+/* ── Travel mode selector ─────────────────────── */
+.travelModeRow {
+  display:     flex;
+  align-items: center;
+  gap:         var(--space-sm);
+  margin-top:  var(--space-xs);
+  flex-wrap:   wrap;
+}
+
+.travelModeLabel {
+  font-size:   var(--font-size-xs);
+  color:       var(--color-text-subtle);
+  font-weight: 500;
+  flex-shrink: 0;
+}
+
+.travelModeBtns {
+  display:  flex;
+  gap:      var(--space-xs);
+  flex-wrap: wrap;
+}
+
+.travelModeBtn {
+  padding:       4px 10px;
+  border-radius: var(--radius-sm);
+  font-size:     var(--font-size-xs);
+  font-weight:   600;
+  cursor:        pointer;
+  border:        1px solid;
+  transition:    all var(--transition);
+  font-family:   var(--font-sans);
 }

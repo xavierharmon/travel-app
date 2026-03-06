@@ -3,20 +3,41 @@ import { useEffect, useRef, useState } from "react";
 import styles from "./MapPage.module.css";
 import { useGoogleMaps } from "@/hooks/useGoogleMaps";
 import { useRouteDrawer } from "@/hooks/useRouteDrawer";
-import { STOP_COLORS, MAP_DEFAULTS } from "@/constants";
+import {
+  STOP_COLORS,
+  MAP_DEFAULTS,
+  TRAVEL_MODES,
+  TRAVEL_MODE_COLORS,
+  TRAVEL_MODE_LABELS,
+} from "@/constants";
 import Button from "@/components/common/Button";
 
 export default function MapPage({ trip, onBack, onEdit }) {
-  const mapRef     = useRef(null);
-  const gmapRef    = useRef(null);
-  const overlaysRef = useRef([]);
+  const mapRef       = useRef(null);
+  const gmapRef      = useRef(null);
+  const overlaysRef  = useRef([]);
   const { isReady, error: mapsError } = useGoogleMaps();
   const { fetchAndDrawRoute }         = useRouteDrawer();
+
   const [routeError,  setRouteError]  = useState(null);
   const [fromCache,   setFromCache]   = useState(null);
+  const [activeModes, setActiveModes] = useState(
+    new Set([TRAVEL_MODES.DRIVE, TRAVEL_MODES.FLIGHT, TRAVEL_MODES.BOAT])
+  );
 
+  // Build the full stops array, attaching destinationTravelMode
+  // onto the destination object so route drawing can read it
   const allStops = trip
-    ? [trip.origin, ...(trip.stops || []), trip.destination].filter(s => s?.lat)
+    ? [
+        trip.origin,
+        ...(trip.stops || []),
+        trip.destination
+          ? {
+              ...trip.destination,
+              travelMode: trip.destinationTravelMode || TRAVEL_MODES.DRIVE,
+            }
+          : null,
+      ].filter(s => s?.lat)
     : [];
 
   useEffect(() => {
@@ -37,18 +58,31 @@ export default function MapPage({ trip, onBack, onEdit }) {
     }
 
     renderTrip();
-  }, [isReady, trip]);
+  }, [isReady, trip, activeModes]);
 
   function clearOverlays() {
     overlaysRef.current.forEach(o => o.setMap(null));
     overlaysRef.current = [];
   }
 
+  function toggleMode(mode) {
+    setActiveModes(prev => {
+      const next = new Set(prev);
+      if (next.has(mode)) {
+        if (next.size === 1) return prev; // always keep at least one active
+        next.delete(mode);
+      } else {
+        next.add(mode);
+      }
+      return next;
+    });
+  }
+
   async function renderTrip() {
     clearOverlays();
     if (!allStops.length) return;
 
-    // Place markers
+    // Place numbered markers for every stop
     allStops.forEach((stop, i) => {
       const isFirst = i === 0;
       const isLast  = i === allStops.length - 1;
@@ -64,79 +98,97 @@ export default function MapPage({ trip, onBack, onEdit }) {
         title:    stop.name,
         icon: {
           path:         window.google.maps.SymbolPath.CIRCLE,
-          scale:        9,
+          scale:        isFirst || isLast ? 7 : 5,
           fillColor:    color,
-          fillOpacity:  1,
+          fillOpacity:  0.9,
           strokeColor:  "#ffffff",
-          strokeWeight: 2,
+          strokeWeight: 1.5,
         },
         label: {
           text:       String(i + 1),
           color:      "#ffffff",
-          fontSize:   "11px",
+          fontSize:   "9px",
           fontWeight: "bold",
         },
       });
 
-      const stopData = [trip.origin, ...(trip.stops || []), trip.destination]
-        .filter(Boolean)[i];
+      // Get travel mode for this stop (how you arrived here)
+      const travelMode = i > 0
+        ? (stop.travelMode || TRAVEL_MODES.DRIVE)
+        : null;
+
+      const stopData = [
+        trip.origin,
+        ...(trip.stops || []),
+        trip.destination,
+      ].filter(Boolean)[i];
+
+      const infoContent = `
+        <div style="font-family:system-ui,sans-serif;padding:6px 10px;
+                    color:#1e293b;max-width:220px">
+          <strong style="font-size:14px">${stop.name}</strong>
+          ${travelMode ? `
+            <div style="font-size:11px;margin-top:4px;
+                        color:${TRAVEL_MODE_COLORS[travelMode]};
+                        font-weight:600">
+              ${TRAVEL_MODE_LABELS[travelMode]} from previous stop
+            </div>` : ""}
+          ${stopData?.description
+            ? `<p style="font-size:12px;color:#475569;margin-top:4px;line-height:1.4">
+               ${stopData.description}</p>`
+            : ""}
+        </div>`;
 
       const infoWindow = new window.google.maps.InfoWindow({
-        content: `
-          <div style="font-family:system-ui,sans-serif;padding:4px 8px;
-                      color:#1e293b;max-width:220px">
-            <strong style="font-size:14px">${stop.name}</strong>
-            ${stopData?.description
-              ? `<p style="font-size:12px;color:#475569;margin-top:4px">
-                 ${stopData.description}</p>`
-              : ""}
-          </div>`,
+        content: infoContent,
       });
-
       marker.addListener("click", () =>
         infoWindow.open(gmapRef.current, marker)
       );
       overlaysRef.current.push(marker);
     });
 
-    // Fit bounds to all stops
+    // Fit map to all stops
     if (allStops.length >= 2) {
       const bounds = new window.google.maps.LatLngBounds();
       allStops.forEach(s => bounds.extend({ lat: s.lat, lng: s.lng }));
       gmapRef.current.fitBounds(bounds, 80);
 
-      // Draw the route — uses cache if available, API if not
       try {
         const result = await fetchAndDrawRoute(
           gmapRef.current,
           allStops,
-          STOP_COLORS.STOP
+          STOP_COLORS.STOP,
+          activeModes
         );
-        if (result) {
-          overlaysRef.current.push(result.polyline);
-          setFromCache(result.fromCache);
-          setRouteError(null);
+        if (result?.polylines) {
+          overlaysRef.current.push(...result.polylines.filter(Boolean));
         }
+        setFromCache(result?.fromCache ?? null);
+        setRouteError(null);
       } catch (err) {
         setRouteError("Could not load route. " + err.message);
       }
     }
   }
 
-  const stopList = [trip?.origin, ...(trip?.stops || []), trip?.destination]
-    .filter(s => s?.name);
+  const stopList = [
+    trip?.origin,
+    ...(trip?.stops || []),
+    trip?.destination,
+  ].filter(s => s?.name);
 
   return (
     <div className={styles.page}>
       <header className={styles.header}>
         <Button variant="ghost" onClick={onBack}>←</Button>
+
         <div className={styles.tripInfo}>
           <h2 className={styles.tripName}>{trip?.name || "Trip Map"}</h2>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
             {trip?.date && (
               <span className={styles.tripDate}>{trip.date}</span>
             )}
-            {/* Show whether route came from cache or API */}
             {fromCache !== null && (
               <span style={{
                 fontSize:      10,
@@ -155,6 +207,37 @@ export default function MapPage({ trip, onBack, onEdit }) {
             )}
           </div>
         </div>
+
+        {/* Travel mode filter toggles */}
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+          {Object.values(TRAVEL_MODES).map(mode => (
+            <button
+              key={mode}
+              onClick={() => toggleMode(mode)}
+              style={{
+                padding:      "5px 10px",
+                borderRadius: 6,
+                fontSize:     12,
+                fontWeight:   600,
+                cursor:       "pointer",
+                border:       "1px solid",
+                transition:   "all 0.2s",
+                background:   activeModes.has(mode)
+                  ? TRAVEL_MODE_COLORS[mode]
+                  : "var(--color-surface-2)",
+                borderColor:  activeModes.has(mode)
+                  ? TRAVEL_MODE_COLORS[mode]
+                  : "var(--color-border)",
+                color:        activeModes.has(mode)
+                  ? "#fff"
+                  : "var(--color-text-muted)",
+              }}
+            >
+              {TRAVEL_MODE_LABELS[mode]}
+            </button>
+          ))}
+        </div>
+
         <Button variant="secondary" size="sm" onClick={onEdit}>Edit</Button>
       </header>
 
@@ -167,6 +250,7 @@ export default function MapPage({ trip, onBack, onEdit }) {
         <div ref={mapRef} className={styles.map} />
       </div>
 
+      {/* Legend */}
       {stopList.length > 0 && (
         <footer className={styles.legend}>
           {stopList.map((s, i) => {
@@ -175,6 +259,13 @@ export default function MapPage({ trip, onBack, onEdit }) {
               : i === stopList.length - 1
               ? STOP_COLORS.DESTINATION
               : STOP_COLORS.STOP;
+
+            const travelMode = i === stopList.length - 1
+              ? (trip?.destinationTravelMode || TRAVEL_MODES.DRIVE)
+              : i > 0
+              ? (trip?.stops?.[i - 1]?.travelMode || TRAVEL_MODES.DRIVE)
+              : null;
+
             return (
               <div key={i} className={styles.legendItem}>
                 <span
@@ -186,6 +277,15 @@ export default function MapPage({ trip, onBack, onEdit }) {
                 <span className={styles.legendName}>
                   {s.name?.split(",")[0]}
                 </span>
+                {travelMode && (
+                  <span style={{
+                    fontSize:   10,
+                    color:      TRAVEL_MODE_COLORS[travelMode],
+                    fontWeight: 600,
+                  }}>
+                    {TRAVEL_MODE_LABELS[travelMode]}
+                  </span>
+                )}
               </div>
             );
           })}
