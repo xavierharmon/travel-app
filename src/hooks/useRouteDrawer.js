@@ -38,21 +38,21 @@ export function useRouteDrawer() {
     }
   }, []);
 
-  // Fetches a single drive segment from Routes API and caches it
-  const fetchDriveSegment = useCallback(async (map, stops, color) => {
-    const validStops = stops.filter(s => s?.lat && s?.lng);
+  // Fetches a single drive segment from Routes API and caches the result
+  const fetchDriveSegment = useCallback(async (map, from, to, color) => {
+    const validStops = [from, to].filter(s => s?.lat && s?.lng);
     if (validStops.length < 2) return null;
 
-    // Check cache first
+    // Check localStorage cache first — zero API calls if found
     const stored = getStoredRoute(validStops);
     if (stored) {
-      console.log("[fetchDriveSegment] drawing from cache ✓");
+      console.log("[fetchDriveSegment] cache hit ✓");
       const polyline = drawStoredRoute(map, stored, color);
       return { polyline, fromCache: true };
     }
 
-    // Not cached — call Routes API
-    console.log("[fetchDriveSegment] calling Routes API for", validStops.length, "stops");
+    // Not in cache — call Routes API once and store the result
+    console.log("[fetchDriveSegment] calling Routes API");
 
     const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
 
@@ -60,27 +60,20 @@ export function useRouteDrawer() {
       origin: {
         location: {
           latLng: {
-            latitude:  validStops[0].lat,
-            longitude: validStops[0].lng,
+            latitude:  from.lat,
+            longitude: from.lng,
           },
         },
       },
       destination: {
         location: {
           latLng: {
-            latitude:  validStops[validStops.length - 1].lat,
-            longitude: validStops[validStops.length - 1].lng,
+            latitude:  to.lat,
+            longitude: to.lng,
           },
         },
       },
-      intermediates: validStops.slice(1, -1).map(s => ({
-        location: {
-          latLng: {
-            latitude:  s.lat,
-            longitude: s.lng,
-          },
-        },
-      })),
+      intermediates:            [],
       travelMode:               "DRIVE",
       routingPreference:        "TRAFFIC_UNAWARE",
       computeAlternativeRoutes: false,
@@ -118,13 +111,14 @@ export function useRouteDrawer() {
 
     storeRoute(validStops, encodedPolyline);
     const polyline = drawStoredRoute(map, encodedPolyline, color);
-    console.log("[fetchDriveSegment] polyline drawn ✓");
+    console.log("[fetchDriveSegment] polyline drawn and cached ✓");
 
     return { polyline, fromCache: false };
   }, [drawStoredRoute]);
 
-  // Main entry point — handles all travel modes segment by segment
-  // activeModes is a Set of TRAVEL_MODES values to show
+  // Main entry point — processes every segment between consecutive stops
+  // Each segment reads its own travelMode from the destination stop object
+  // activeModes is a Set controlling which modes are visible
   const fetchAndDrawRoute = useCallback((
     map,
     stops,
@@ -132,26 +126,41 @@ export function useRouteDrawer() {
     activeModes = new Set([TRAVEL_MODES.DRIVE, TRAVEL_MODES.FLIGHT, TRAVEL_MODES.BOAT])
   ) => {
     return new Promise(async (resolve, reject) => {
-      if (!window.google) return reject(new Error("Google Maps not loaded"));
+      if (!window.google) {
+        return reject(new Error("Google Maps not loaded"));
+      }
 
       const validStops = stops.filter(s => s?.lat && s?.lng);
-      if (validStops.length < 2) return resolve({ polylines: [], fromCache: true });
+      if (validStops.length < 2) {
+        return resolve({ polylines: [], fromCache: true });
+      }
 
       const allPolylines = [];
       let   anyFromApi   = false;
 
-      // Process each segment between consecutive stops
+      // Walk every consecutive pair of stops and draw the correct segment type
       for (let i = 1; i < validStops.length; i++) {
         const from = validStops[i - 1];
         const to   = validStops[i];
+
+        // travelMode lives on the destination end of each segment
         const mode = to.travelMode || TRAVEL_MODES.DRIVE;
 
-        // Skip if this travel mode is filtered out
-        if (!activeModes.has(mode)) continue;
+        console.log(
+          `[fetchAndDrawRoute] segment ${i}:`,
+          `${from.name?.split(",")[0]} → ${to.name?.split(",")[0]}`,
+          `| mode: ${mode}`
+        );
+
+        // Skip if this mode is not in the active filter set
+        if (!activeModes.has(mode)) {
+          console.log(`[fetchAndDrawRoute] skipping — ${mode} is filtered out`);
+          continue;
+        }
 
         if (mode === TRAVEL_MODES.FLIGHT) {
-          // Curved amber arc — no API call needed
-          console.log(`[fetchAndDrawRoute] drawing flight arc: ${from.name} → ${to.name}`);
+          // Curved animated arc — amber color, no API call
+          console.log("[fetchAndDrawRoute] drawing flight arc");
           const lines = drawFlightArc(
             map,
             from,
@@ -161,8 +170,8 @@ export function useRouteDrawer() {
           if (lines) allPolylines.push(...lines.filter(Boolean));
 
         } else if (mode === TRAVEL_MODES.BOAT) {
-          // Dashed cyan arc — no API call needed
-          console.log(`[fetchAndDrawRoute] drawing boat route: ${from.name} → ${to.name}`);
+          // Dashed curved arc — cyan color, no API call
+          console.log("[fetchAndDrawRoute] drawing boat route");
           const lines = drawBoatRoute(
             map,
             from,
@@ -172,17 +181,16 @@ export function useRouteDrawer() {
           if (lines) allPolylines.push(...lines.filter(Boolean));
 
         } else {
-          // DRIVE — road following route via cache or Routes API
-          console.log(`[fetchAndDrawRoute] drawing drive segment: ${from.name} → ${to.name}`);
+          // DRIVE — road following polyline, cached after first call
           try {
-            const result = await fetchDriveSegment(map, [from, to], color);
+            const result = await fetchDriveSegment(map, from, to, color);
             if (result?.polyline) {
               allPolylines.push(result.polyline);
               if (!result.fromCache) anyFromApi = true;
             }
           } catch (err) {
-            console.warn(`[fetchAndDrawRoute] drive segment failed:`, err.message);
-            // Fall back to a dashed straight line for this segment
+            console.warn("[fetchAndDrawRoute] drive segment failed:", err.message);
+            // Fall back to a dashed straight geodesic line
             const fallback = new window.google.maps.Polyline({
               path: [
                 { lat: from.lat, lng: from.lng },
@@ -210,9 +218,9 @@ export function useRouteDrawer() {
       }
 
       resolve({
-        polylines:  allPolylines,
-        polyline:   allPolylines[0] || null,
-        fromCache:  !anyFromApi,
+        polylines: allPolylines,
+        polyline:  allPolylines[0] || null,
+        fromCache: !anyFromApi,
       });
     });
   }, [fetchDriveSegment]);
