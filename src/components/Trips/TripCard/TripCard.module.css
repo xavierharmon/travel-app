@@ -1,90 +1,221 @@
+/* ── Card wrapper ────────────────────────────── */
 .card {
-  background:    var(--color-surface);
-  border-radius: var(--radius-lg);
-  border:        1px solid transparent;
-  overflow:      hidden;
-  transition:    border-color var(--transition), box-shadow var(--transition);
+  background:     var(--color-surface);
+  border-radius:  var(--radius-xl);
+  border:         1px solid var(--color-border);
+  padding:        var(--space-lg);
+  display:        flex;
+  flex-direction: column;
+  gap:            var(--space-sm);
+  transition:     border-color var(--transition), box-shadow var(--transition);
 }
 
 .card:hover {
-  border-color: var(--color-primary);
-  box-shadow:   0 0 0 1px rgba(99, 102, 241, 0.1);
+  border-color: var(--color-border-focus);
+  box-shadow:   var(--shadow-md);
 }
 
-.body {
-  display:     flex;
-  align-items: flex-start;
+/* ── Header row ──────────────────────────────── */
+.header {
+  display:         flex;
+  align-items:     flex-start;
   justify-content: space-between;
-  gap:         var(--space-md);
-  padding:     var(--space-lg);
+  gap:             var(--space-md);
+  flex-wrap:       wrap;
 }
 
-.info { flex: 1; min-width: 0; }
+.titleBlock {
+  flex:           1;
+  min-width:      0;
+  display:        flex;
+  flex-direction: column;
+  gap:            4px;
+}
 
 .titleRow {
   display:     flex;
-  align-items: center;
-  gap:         var(--space-sm);
+  align-items: baseline;
+  gap:         8px;
   flex-wrap:   wrap;
-  margin-bottom: var(--space-xs);
+  min-width:   0;
 }
 
-.name { font-size: var(--font-size-lg); font-weight: 700; color: var(--color-text); }
-
-.date {
-  font-size:     var(--font-size-xs);
-  color:         var(--color-text-subtle);
-  background:    var(--color-surface-2);
-  border-radius: var(--radius-sm);
-  padding:       2px 8px;
+.name {
+  font-size:     var(--font-size-lg);
+  font-weight:   700;
+  color:         var(--color-text);
+  margin:        0;
+  white-space:   nowrap;
+  overflow:      hidden;
+  text-overflow: ellipsis;
 }
 
-.route {
-  font-size:   var(--font-size-sm);
-  color:       var(--color-text-subtle);
-  margin-bottom: var(--space-xs);
-  line-height: 1.8;
-}
-
-.dot { font-size: 9px; }
-.arrow { color: var(--color-border); }
-
-.description {
-  font-size:   var(--font-size-sm);
-  color:       var(--color-text-subtle);
-  line-height: 1.5;
-}
-
-.actions {
-  display:    flex;
-  gap:        var(--space-xs);
+/* ── Inline mileage next to title ────────────── */
+.inlineMileage {
+  display:     flex;
+  align-items: center;
+  gap:         6px;
+  flex-wrap:   wrap;
   flex-shrink: 0;
 }
 
-.photoStrip {
+.mileagePill {
+  font-size:   11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.mileageTotal {
+  font-size:    11px;
+  font-weight:  700;
+  color:        var(--color-text-muted);
+  padding-left: 4px;
+  border-left:  1px solid var(--color-border);
+  white-space:  nowrap;
+}
+
+/* ── Meta row ────────────────────────────────── */
+.metaRow {
   display:     flex;
-  gap:         var(--space-sm);
-  padding:     0 var(--space-lg) var(--space-md);
+  align-items: center;
+  gap:         6px;
   flex-wrap:   wrap;
 }
 
-.photo {
-  width:         64px;
-  height:        64px;
-  object-fit:    cover;
-  border-radius: var(--radius-md);
-  border:        2px solid var(--color-border);
+.date {
+  font-size: 11px;
+  color:     var(--color-text-subtle);
 }
 
-.morePhotos {
-  width:         64px;
-  height:        64px;
+.modePill {
+  font-size:     10px;
+  font-weight:   600;
+  padding:       2px 7px;
+  border-radius: var(--radius-sm);
   background:    var(--color-surface-2);
-  border-radius: var(--radius-md);
-  border:        2px solid var(--color-border);
-  display:       flex;
-  align-items:   center;
+  border:        1px solid var(--color-border);
+  color:         var(--color-text-muted);
+}
+
+/* ── Action buttons ──────────────────────────── */
+.actions {
+  display:     flex;
+  gap:         var(--space-xs);
+  flex-shrink: 0;
+}
+
+/* ── Route ───────────────────────────────────── */
+.route {
+  display:   flex;
+  flex-wrap: wrap;
+  gap:       4px;
+  font-size: var(--font-size-sm);
+  color:     var(--color-text-muted);
+}
+
+.routeStop  { white-space: nowrap; }
+.routeArrow { color: var(--color-border); margin: 0 4px; }
+
+/* ── Photo strip ─────────────────────────────── */
+/*
+  Horizontal scrolling row of thumbnails.
+  Each thumbnail is a fixed width box that lets the image
+  determine its own display height via auto — no clipping.
+*/
+.photoStrip {
+  display:        flex;
+  flex-direction: row;
+  align-items:    flex-start;   /* align to top so varying heights don't stretch */
+  gap:            6px;
+  flex-wrap:      nowrap;
+  overflow-x:     auto;
+  overflow-y:     visible;      /* never clip vertically */
+  padding-bottom: 4px;
+}
+
+/* Hide scrollbar visually but keep it functional */
+.photoStrip::-webkit-scrollbar {
+  height: 3px;
+}
+
+.photoStrip::-webkit-scrollbar-thumb {
+  background:    var(--color-border);
+  border-radius: 2px;
+}
+
+/*
+  Each thumbnail:
+  - fixed width so strip stays compact
+  - NO fixed height — height is determined by the image
+  - NO overflow hidden — nothing gets clipped
+  - background fills any gap around the image
+*/
+.photoThumb {
+  position:         relative;
+  flex-shrink:      0;
+  width:            80px;            /* thumbnail width — change here to resize */
+  border-radius:    var(--radius-sm);
+  background:       var(--color-surface-2);
+  border:           1px solid var(--color-border);
+  display:          flex;
+  align-items:      center;
+  justify-content:  center;
+  overflow:         visible;         /* critical — do not clip the image */
+}
+
+/*
+  The image:
+  - width 100% fills the thumb width
+  - height auto preserves the original aspect ratio
+  - max-height caps very tall images so they stay thumbnail-sized
+  - object-fit unset so the browser uses natural sizing
+  - display block removes inline baseline gap
+*/
+.photoImg {
+  display:    block;
+  width:      100%;
+  height:     auto;
+  max-height: 80px;                  /* caps tall images — change here to resize */
+  border-radius: var(--radius-sm);
+}
+
+/* +N more overlay — positioned relative to the thumb */
+.photoOverlay {
+  position:        absolute;
+  inset:           0;
+  background:      rgba(0, 0, 0, 0.52);
+  display:         flex;
+  align-items:     center;
   justify-content: center;
-  font-size:     var(--font-size-sm);
-  color:         var(--color-text-subtle);
+  font-size:       16px;
+  font-weight:     700;
+  color:           #fff;
+  border-radius:   var(--radius-sm);
+}
+
+/* ── Description ─────────────────────────────── */
+.description {
+  font-size:          var(--font-size-sm);
+  color:              var(--color-text-subtle);
+  line-height:        1.5;
+  margin:             0;
+  overflow:           hidden;
+  display:            -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+/* ── Footer ──────────────────────────────────── */
+.footer {
+  display:     flex;
+  align-items: center;
+  gap:         var(--space-md);
+  flex-wrap:   wrap;
+  padding-top: var(--space-xs);
+  border-top:  1px solid var(--color-border);
+}
+
+.footerStat {
+  font-size: 11px;
+  color:     var(--color-text-subtle);
 }

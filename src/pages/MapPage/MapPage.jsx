@@ -10,23 +10,26 @@ import {
   TRAVEL_MODE_COLORS,
   TRAVEL_MODE_LABELS,
 } from "@/constants";
+import { computeTripMileage } from "@/utils/tripMileage";
+import MileageBadge from "@/components/common/MileageBadge";
 import Button from "@/components/common/Button";
 
 export default function MapPage({ trip, onBack, onEdit }) {
-  const mapRef       = useRef(null);
-  const gmapRef      = useRef(null);
-  const overlaysRef  = useRef([]);
+  const mapRef      = useRef(null);
+  const gmapRef     = useRef(null);
+  const overlaysRef = useRef([]);
+
   const { isReady, error: mapsError } = useGoogleMaps();
   const { fetchAndDrawRoute }         = useRouteDrawer();
 
   const [routeError,  setRouteError]  = useState(null);
   const [fromCache,   setFromCache]   = useState(null);
+  const [mileage,     setMileage]     = useState(null);
   const [activeModes, setActiveModes] = useState(
     new Set([TRAVEL_MODES.DRIVE, TRAVEL_MODES.FLIGHT, TRAVEL_MODES.BOAT])
   );
 
-  // Build the full stops array, attaching destinationTravelMode
-  // onto the destination object so route drawing can read it
+  // Build full stops array with destinationTravelMode attached
   const allStops = trip
     ? [
         trip.origin,
@@ -40,9 +43,13 @@ export default function MapPage({ trip, onBack, onEdit }) {
       ].filter(s => s?.lat)
     : [];
 
+  // Compute mileage whenever trip or cache changes
+  useEffect(() => {
+    if (trip) setMileage(computeTripMileage(trip));
+  }, [trip]);
+
   useEffect(() => {
     if (!isReady || !mapRef.current) return;
-
     if (!gmapRef.current) {
       gmapRef.current = new window.google.maps.Map(mapRef.current, {
         center:            allStops[0]
@@ -56,9 +63,13 @@ export default function MapPage({ trip, onBack, onEdit }) {
         fullscreenControl: true,
       });
     }
-
     renderTrip();
   }, [isReady, trip, activeModes]);
+
+  // Recompute mileage after routes are drawn so drive miles are road-accurate
+  useEffect(() => {
+    if (trip) setMileage(computeTripMileage(trip));
+  }, [fromCache]);
 
   function clearOverlays() {
     overlaysRef.current.forEach(o => o.setMap(null));
@@ -69,7 +80,7 @@ export default function MapPage({ trip, onBack, onEdit }) {
     setActiveModes(prev => {
       const next = new Set(prev);
       if (next.has(mode)) {
-        if (next.size === 1) return prev; // always keep at least one active
+        if (next.size === 1) return prev;
         next.delete(mode);
       } else {
         next.add(mode);
@@ -82,7 +93,6 @@ export default function MapPage({ trip, onBack, onEdit }) {
     clearOverlays();
     if (!allStops.length) return;
 
-    // Place numbered markers for every stop
     allStops.forEach((stop, i) => {
       const isFirst = i === 0;
       const isLast  = i === allStops.length - 1;
@@ -112,7 +122,6 @@ export default function MapPage({ trip, onBack, onEdit }) {
         },
       });
 
-      // Get travel mode for this stop (how you arrived here)
       const travelMode = i > 0
         ? (stop.travelMode || TRAVEL_MODES.DRIVE)
         : null;
@@ -148,7 +157,6 @@ export default function MapPage({ trip, onBack, onEdit }) {
       overlaysRef.current.push(marker);
     });
 
-    // Fit map to all stops
     if (allStops.length >= 2) {
       const bounds = new window.google.maps.LatLngBounds();
       allStops.forEach(s => bounds.extend({ lat: s.lat, lng: s.lng }));
@@ -166,6 +174,9 @@ export default function MapPage({ trip, onBack, onEdit }) {
         }
         setFromCache(result?.fromCache ?? null);
         setRouteError(null);
+
+        // Recompute mileage now that drive distances are cached
+        setMileage(computeTripMileage(trip));
       } catch (err) {
         setRouteError("Could not load route. " + err.message);
       }
@@ -250,45 +261,54 @@ export default function MapPage({ trip, onBack, onEdit }) {
         <div ref={mapRef} className={styles.map} />
       </div>
 
-      {/* Legend */}
+      {/* Legend + mileage footer */}
       {stopList.length > 0 && (
         <footer className={styles.legend}>
-          {stopList.map((s, i) => {
-            const color = i === 0
-              ? STOP_COLORS.ORIGIN
-              : i === stopList.length - 1
-              ? STOP_COLORS.DESTINATION
-              : STOP_COLORS.STOP;
+          <div className={styles.legendStops}>
+            {stopList.map((s, i) => {
+              const color = i === 0
+                ? STOP_COLORS.ORIGIN
+                : i === stopList.length - 1
+                ? STOP_COLORS.DESTINATION
+                : STOP_COLORS.STOP;
 
-            const travelMode = i === stopList.length - 1
-              ? (trip?.destinationTravelMode || TRAVEL_MODES.DRIVE)
-              : i > 0
-              ? (trip?.stops?.[i - 1]?.travelMode || TRAVEL_MODES.DRIVE)
-              : null;
+              const travelMode = i === stopList.length - 1
+                ? (trip?.destinationTravelMode || TRAVEL_MODES.DRIVE)
+                : i > 0
+                ? (trip?.stops?.[i - 1]?.travelMode || TRAVEL_MODES.DRIVE)
+                : null;
 
-            return (
-              <div key={i} className={styles.legendItem}>
-                <span
-                  className={styles.legendDot}
-                  style={{ background: color }}
-                >
-                  {i + 1}
-                </span>
-                <span className={styles.legendName}>
-                  {s.name?.split(",")[0]}
-                </span>
-                {travelMode && (
-                  <span style={{
-                    fontSize:   10,
-                    color:      TRAVEL_MODE_COLORS[travelMode],
-                    fontWeight: 600,
-                  }}>
-                    {TRAVEL_MODE_LABELS[travelMode]}
+              return (
+                <div key={i} className={styles.legendItem}>
+                  <span
+                    className={styles.legendDot}
+                    style={{ background: color }}
+                  >
+                    {i + 1}
                   </span>
-                )}
-              </div>
-            );
-          })}
+                  <span className={styles.legendName}>
+                    {s.name?.split(",")[0]}
+                  </span>
+                  {travelMode && (
+                    <span style={{
+                      fontSize:   10,
+                      color:      TRAVEL_MODE_COLORS[travelMode],
+                      fontWeight: 600,
+                    }}>
+                      {TRAVEL_MODE_LABELS[travelMode]}
+                    </span>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Mileage breakdown */}
+          {mileage && (
+            <div className={styles.legendMileage}>
+              <MileageBadge mileage={mileage} />
+            </div>
+          )}
         </footer>
       )}
     </div>

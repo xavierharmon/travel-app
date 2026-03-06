@@ -44,8 +44,6 @@ export default function TripListPage({
       {/* ── Header ───────────────────────────────── */}
       <header className={styles.header}>
         <div className={styles.brand}>
-
-          {/* Custom logo image instead of emoji */}
           <div className={styles.brandIcon}>
             <img
               src="/logo.png"
@@ -53,7 +51,6 @@ export default function TripListPage({
               className={styles.brandLogo}
             />
           </div>
-
           <div>
             <h1 className={styles.title}>Xavier & Kylie's Adventures</h1>
             <p className={styles.subtitle}>
@@ -64,7 +61,6 @@ export default function TripListPage({
           </div>
         </div>
 
-        {/* Header action buttons */}
         <div style={{ display: "flex", gap: "var(--space-sm)" }}>
           <Button variant="secondary" onClick={onViewHistory} size="md">
             🗺️ Trip History
@@ -89,7 +85,12 @@ export default function TripListPage({
             <img
               src="/logo.png"
               alt="Start your adventure"
-              style={{ width: 100, height: 100, objectFit: "contain", opacity: 0.5 }}
+              style={{
+                width:      100,
+                height:     100,
+                objectFit:  "contain",
+                opacity:    0.5,
+              }}
             />
             <p>No trips yet. Click <strong>New Trip</strong> to start your adventure!</p>
           </div>

@@ -11,19 +11,15 @@ import {
   TRAVEL_MODE_LABELS,
 } from "@/constants";
 import { drawFlightArc, drawBoatRoute } from "@/utils/curveHelper";
+import { computeAggregateMileage, computeTripMileage } from "@/utils/tripMileage";
+import { formatMiles } from "@/utils/haversine";
+import MileageBadge from "@/components/common/MileageBadge";
 import Button from "@/components/common/Button";
 
 const TRIP_COLORS = [
-  "#6366f1",
-  "#22c55e",
-  "#f59e0b",
-  "#ec4899",
-  "#14b8a6",
-  "#f97316",
-  "#8b5cf6",
-  "#06b6d4",
-  "#ef4444",
-  "#84cc16",
+  "#6366f1", "#22c55e", "#f59e0b", "#ec4899",
+  "#14b8a6", "#f97316", "#8b5cf6", "#06b6d4",
+  "#ef4444", "#84cc16",
 ];
 
 const darkMapStyles = [
@@ -35,8 +31,8 @@ const darkMapStyles = [
   { featureType: "road.highway",       elementType: "labels.text.fill", stylers: [{ color: "#94a3b8" }] },
   { featureType: "water",              elementType: "geometry",         stylers: [{ color: "#0f172a" }] },
   { featureType: "water",              elementType: "labels.text.fill", stylers: [{ color: "#475569" }] },
-  { featureType: "poi",                stylers: [{ visibility: "off" }] },
-  { featureType: "transit",            stylers: [{ visibility: "off" }] },
+  { featureType: "poi",                stylers: [{ visibility: "off"  }] },
+  { featureType: "transit",            stylers: [{ visibility: "off"  }] },
   { featureType: "administrative",     elementType: "geometry.stroke",  stylers: [{ color: "#334155" }] },
 ];
 
@@ -49,21 +45,24 @@ export default function HistoryMapPage({ onBack }) {
   const gmapRef     = useRef(null);
   const overlaysRef = useRef([]);
 
-  const [activeTripId, setActiveTripId] = useState(null);
-  const [stats,        setStats]        = useState(null);
-  const [mapMode,      setMapMode]      = useState("lines");
-  const [drawing,      setDrawing]      = useState(false);
-  const [activeModes,  setActiveModes]  = useState(
+  const [activeTripId,    setActiveTripId]    = useState(null);
+  const [stats,           setStats]           = useState(null);
+  const [aggregateMileage, setAggregateMileage] = useState(null);
+  const [mapMode,         setMapMode]         = useState("lines");
+  const [drawing,         setDrawing]         = useState(false);
+  const [activeModes,     setActiveModes]     = useState(
     new Set([TRAVEL_MODES.DRIVE, TRAVEL_MODES.FLIGHT, TRAVEL_MODES.BOAT])
   );
 
-  // Compute summary stats whenever trips change
+  // Compute summary stats and aggregate mileage whenever trips change
   useEffect(() => {
     if (!trips.length) return;
+
     const totalStops = trips.reduce((sum, t) => {
       return sum + [t.origin, ...(t.stops || []), t.destination]
         .filter(s => s?.lat).length;
     }, 0);
+
     const totalPhotos = trips.reduce((sum, t) => {
       const tripPhotos = (t.photos || []).length;
       const stopPhotos = (t.stops || []).reduce((s, stop) =>
@@ -71,10 +70,12 @@ export default function HistoryMapPage({ onBack }) {
       );
       return sum + tripPhotos + stopPhotos;
     }, 0);
+
     setStats({ totalTrips: trips.length, totalStops, totalPhotos });
+    setAggregateMileage(computeAggregateMileage(trips));
   }, [trips]);
 
-  // Step 1: Initialize map when Google Maps is ready
+  // Initialize map when Google Maps is ready
   useEffect(() => {
     if (!isReady || !mapRef.current) return;
     if (!gmapRef.current) {
@@ -90,7 +91,7 @@ export default function HistoryMapPage({ onBack }) {
     }
   }, [isReady]);
 
-  // Step 2: Draw trips once map AND trips are both ready
+  // Draw trips once map AND trips are both ready
   useEffect(() => {
     if (!isReady || !gmapRef.current || !trips.length) return;
     drawAllTrips(activeTripId);
@@ -123,17 +124,6 @@ export default function HistoryMapPage({ onBack }) {
       ? trips.filter(t => t.id === filterTripId)
       : trips;
 
-    console.log("[HistoryMap] Drawing", tripsToShow.length, "trips");
-    tripsToShow.forEach(t => {
-      console.log(
-        " →", t.name,
-        "| origin:",      t.origin?.lat      ? "✓" : "✗",
-        "| destination:", t.destination?.lat  ? "✓" : "✗",
-        "| stops:",       t.stops?.length || 0,
-        "| destMode:",    t.destinationTravelMode || TRAVEL_MODES.DRIVE
-      );
-    });
-
     if (!tripsToShow.length) {
       setDrawing(false);
       return;
@@ -144,8 +134,7 @@ export default function HistoryMapPage({ onBack }) {
 
     for (const [tripIndex, trip] of tripsToShow.entries()) {
 
-      // Build stops array — critically attach destinationTravelMode
-      // onto the destination object so each segment reads its own mode
+      // Attach destinationTravelMode to destination stop
       const rawStops = [
         trip.origin,
         ...(trip.stops || []),
@@ -157,14 +146,11 @@ export default function HistoryMapPage({ onBack }) {
           : null,
       ].filter(s => s?.lat);
 
-      if (rawStops.length === 0) {
-        console.warn(`[HistoryMap] "${trip.name}" has no coordinates — skipping`);
-        continue;
-      }
+      if (rawStops.length === 0) continue;
 
       const color = TRIP_COLORS[tripIndex % TRIP_COLORS.length];
 
-      // Place markers or glow circles depending on display mode
+      // Place markers or glow circles
       rawStops.forEach((stop, stopIndex) => {
         const isOrigin = stopIndex === 0;
         const isDest   = stopIndex === rawStops.length - 1;
@@ -181,7 +167,6 @@ export default function HistoryMapPage({ onBack }) {
             map:           gmapRef.current,
           });
           overlaysRef.current.push(circle);
-
         } else {
           const pinColor = isOrigin
             ? STOP_COLORS.ORIGIN
@@ -207,10 +192,13 @@ export default function HistoryMapPage({ onBack }) {
             ? (stop.travelMode || TRAVEL_MODES.DRIVE)
             : null;
 
+          // Compute mileage for this individual trip for info window
+          const tripMileage = computeTripMileage(trip);
+
           const infoWindow = new window.google.maps.InfoWindow({
             content: `
               <div style="font-family:system-ui,sans-serif;padding:6px 10px;
-                          color:#1e293b;max-width:200px">
+                          color:#1e293b;max-width:220px">
                 <div style="font-size:11px;color:#6366f1;font-weight:600;
                             text-transform:uppercase;letter-spacing:0.05em;
                             margin-bottom:3px">
@@ -230,10 +218,15 @@ export default function HistoryMapPage({ onBack }) {
                                line-height:1.4">
                      ${stop.description}</p>`
                   : ""}
-                ${trip.date
-                  ? `<p style="font-size:11px;color:#94a3b8;margin-top:4px">
-                     ${trip.date}</p>`
-                  : ""}
+                ${tripMileage ? `
+                  <div style="margin-top:6px;padding-top:6px;
+                              border-top:1px solid #e2e8f0;
+                              font-size:11px;color:#64748b">
+                    ${tripMileage.drive  > 0 ? `🚗 ${formatMiles(tripMileage.drive)}<br>` : ""}
+                    ${tripMileage.flight > 0 ? `✈️ ${formatMiles(tripMileage.flight)}<br>` : ""}
+                    ${tripMileage.boat   > 0 ? `⛵ ${formatMiles(tripMileage.boat)}<br>` : ""}
+                    <strong>📏 ${formatMiles(tripMileage.total)} total</strong>
+                  </div>` : ""}
               </div>`,
           });
 
@@ -247,33 +240,18 @@ export default function HistoryMapPage({ onBack }) {
         hasPoints = true;
       });
 
-      // Draw each segment individually so travel mode is respected per leg
+      // Draw each segment respecting travel mode
       if (rawStops.length >= 2) {
         for (let i = 1; i < rawStops.length; i++) {
           const from = rawStops[i - 1];
           const to   = rawStops[i];
-
-          // Read travelMode from the destination end of each segment
           const mode = to.travelMode || TRAVEL_MODES.DRIVE;
 
-          console.log(
-            `[HistoryMap] Segment ${i}: ${from.name?.split(",")[0]}`,
-            `→ ${to.name?.split(",")[0]} | mode: ${mode}`
-          );
-
-          // Skip segment if its travel mode is filtered out
-          if (!activeModes.has(mode)) {
-            console.log(`[HistoryMap] Skipping segment — mode ${mode} is filtered out`);
-            continue;
-          }
+          if (!activeModes.has(mode)) continue;
 
           if (mode === TRAVEL_MODES.FLIGHT) {
-            // Curved amber arc — zero API calls
             const lines = drawFlightArc(
-              gmapRef.current,
-              from,
-              to,
-              TRAVEL_MODE_COLORS.FLIGHT
+              gmapRef.current, from, to, TRAVEL_MODE_COLORS.FLIGHT
             );
             if (lines) {
               lines.filter(Boolean).forEach(l => {
@@ -285,12 +263,8 @@ export default function HistoryMapPage({ onBack }) {
             }
 
           } else if (mode === TRAVEL_MODES.BOAT) {
-            // Dashed cyan arc — zero API calls
             const lines = drawBoatRoute(
-              gmapRef.current,
-              from,
-              to,
-              TRAVEL_MODE_COLORS.BOAT
+              gmapRef.current, from, to, TRAVEL_MODE_COLORS.BOAT
             );
             if (lines) {
               lines.filter(Boolean).forEach(l => {
@@ -302,7 +276,6 @@ export default function HistoryMapPage({ onBack }) {
             }
 
           } else {
-            // DRIVE — road following route, cached after first fetch
             try {
               const result = await fetchAndDrawRoute(
                 gmapRef.current,
@@ -310,23 +283,16 @@ export default function HistoryMapPage({ onBack }) {
                 color,
                 new Set([TRAVEL_MODES.DRIVE])
               );
-
               const polylines = result?.polylines
                 || (result?.polyline ? [result.polyline] : []);
-
               polylines.filter(Boolean).forEach(p => {
                 if (mapMode === "heatmap") {
                   p.setOptions({ strokeOpacity: 0.3, strokeWeight: 2 });
                 }
                 overlaysRef.current.push(p);
               });
-
             } catch (err) {
-              console.warn(
-                `[HistoryMap] Drive segment failed for "${trip.name}":`,
-                err.message
-              );
-              // Fall back to dashed straight line
+              console.warn(`[HistoryMap] Drive failed:`, err.message);
               const fallback = new window.google.maps.Polyline({
                 path: [
                   { lat: from.lat, lng: from.lng },
@@ -355,10 +321,10 @@ export default function HistoryMapPage({ onBack }) {
       }
     }
 
-    if (hasPoints) {
-      gmapRef.current.fitBounds(allBounds, 60);
-    }
+    if (hasPoints) gmapRef.current.fitBounds(allBounds, 60);
 
+    // Refresh aggregate mileage after drive routes are fetched and cached
+    setAggregateMileage(computeAggregateMileage(trips));
     setDrawing(false);
   }, [trips, mapMode, activeModes, fetchAndDrawRoute]);
 
@@ -382,6 +348,20 @@ export default function HistoryMapPage({ onBack }) {
               <span className={styles.stat}>📍 {stats.totalStops} stops</span>
               <span className={styles.statDivider}>·</span>
               <span className={styles.stat}>📷 {stats.totalPhotos} photos</span>
+              {aggregateMileage && aggregateMileage.total > 0 && (
+                <>
+                  <span className={styles.statDivider}>·</span>
+                  <span className={styles.stat}>
+                    📏 {formatMiles(aggregateMileage.total)} total
+                    {aggregateMileage.hasUncachedDrive && (
+                      <span
+                        title="Some drive distances are estimated until routes are viewed"
+                        style={{ opacity: 0.6, marginLeft: 2 }}
+                      >~</span>
+                    )}
+                  </span>
+                </>
+              )}
             </div>
           )}
         </div>
@@ -449,35 +429,62 @@ export default function HistoryMapPage({ onBack }) {
             </span>
           </button>
 
-          {/* One per trip */}
-          {tripsWithCoords.map((trip, i) => (
-            <button
-              key={trip.id}
-              className={`${styles.tripBtn} ${activeTripId === trip.id ? styles.tripBtnActive : ""}`}
-              onClick={() =>
-                setActiveTripId(activeTripId === trip.id ? null : trip.id)
-              }
-            >
-              <span
-                className={styles.tripBtnDot}
-                style={{ background: TRIP_COLORS[i % TRIP_COLORS.length] }}
-              />
-              <span className={styles.tripBtnName}>
-                {trip.name || "Untitled"}
-              </span>
-              {trip.date && (
-                <span className={styles.tripBtnDate}>
-                  {trip.date.slice(0, 7)}
-                </span>
-              )}
-            </button>
-          ))}
+          {/* One per trip with mileage */}
+          {tripsWithCoords.map((trip, i) => {
+            const tripMileage = computeTripMileage(trip);
+            return (
+              <button
+                key={trip.id}
+                className={`${styles.tripBtn} ${activeTripId === trip.id ? styles.tripBtnActive : ""}`}
+                onClick={() =>
+                  setActiveTripId(activeTripId === trip.id ? null : trip.id)
+                }
+              >
+                <span
+                  className={styles.tripBtnDot}
+                  style={{ background: TRIP_COLORS[i % TRIP_COLORS.length] }}
+                />
+                <div className={styles.tripBtnInfo}>
+                  <span className={styles.tripBtnName}>
+                    {trip.name || "Untitled"}
+                  </span>
+                  {tripMileage && tripMileage.total > 0 && (
+                    <span className={styles.tripBtnMileage}>
+                      {formatMiles(tripMileage.total)}
+                      {tripMileage.hasUncachedDrive && "~"}
+                    </span>
+                  )}
+                </div>
+                {trip.date && (
+                  <span className={styles.tripBtnDate}>
+                    {trip.date.slice(0, 7)}
+                  </span>
+                )}
+              </button>
+            );
+          })}
 
           {tripsWithCoords.length === 0 && (
             <p className={styles.emptyState}>
               No trips with locations yet. Add an origin and destination
               to a trip to see it here.
             </p>
+          )}
+
+          {/* Aggregate mileage breakdown */}
+          {aggregateMileage && aggregateMileage.total > 0 && (
+            <div className={styles.mileageSection}>
+              <p className={styles.sidebarLabel}>
+                {activeTripId ? "Trip mileage" : "All trips mileage"}
+              </p>
+              <MileageBadge
+                mileage={
+                  activeTripId
+                    ? computeTripMileage(trips.find(t => t.id === activeTripId))
+                    : aggregateMileage
+                }
+              />
+            </div>
           )}
 
           {/* Travel mode legend */}

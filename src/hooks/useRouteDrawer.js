@@ -1,6 +1,8 @@
 // src/hooks/useRouteDrawer.js
 import { useCallback } from "react";
 import { getStoredRoute, storeRoute } from "@/utils/routeStorage";
+import { storeMileage, getStoredMileage } from "@/utils/mileageStorage";
+import { metersToMiles } from "@/utils/haversine";
 import {
   STOP_COLORS,
   TRAVEL_MODES,
@@ -10,7 +12,6 @@ import { drawFlightArc, drawBoatRoute } from "@/utils/curveHelper";
 
 export function useRouteDrawer() {
 
-  // Decodes a stored encoded polyline and draws it on the map
   const drawStoredRoute = useCallback((map, encodedPolyline, color = STOP_COLORS.STOP) => {
     if (!window.google?.maps?.geometry) {
       console.error("[drawStoredRoute] geometry library not loaded");
@@ -38,20 +39,25 @@ export function useRouteDrawer() {
     }
   }, []);
 
-  // Fetches a single drive segment from Routes API and caches the result
+  // Fetches a single drive segment — stores both polyline AND mileage
   const fetchDriveSegment = useCallback(async (map, from, to, color) => {
     const validStops = [from, to].filter(s => s?.lat && s?.lng);
     if (validStops.length < 2) return null;
 
-    // Check localStorage cache first — zero API calls if found
+    // Check polyline cache first
     const stored = getStoredRoute(validStops);
     if (stored) {
-      console.log("[fetchDriveSegment] cache hit ✓");
+      console.log("[fetchDriveSegment] polyline cache hit ✓");
       const polyline = drawStoredRoute(map, stored, color);
+
+      // Also check if mileage is already cached
+      const cachedMileage = getStoredMileage(from, to);
+      console.log("[fetchDriveSegment] mileage cache hit:", cachedMileage !== null);
+
       return { polyline, fromCache: true };
     }
 
-    // Not in cache — call Routes API once and store the result
+    // Not cached — call Routes API and store both polyline and distance
     console.log("[fetchDriveSegment] calling Routes API");
 
     const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
@@ -91,7 +97,8 @@ export function useRouteDrawer() {
         headers: {
           "Content-Type":     "application/json",
           "X-Goog-Api-Key":   apiKey,
-          "X-Goog-FieldMask": "routes.polyline.encodedPolyline",
+          // Request both polyline and distance in one call — no extra cost
+          "X-Goog-FieldMask": "routes.polyline.encodedPolyline,routes.distanceMeters",
         },
         body: JSON.stringify(requestBody),
       }
@@ -103,13 +110,23 @@ export function useRouteDrawer() {
     }
 
     const data = await response.json();
-    const encodedPolyline = data.routes[0]?.polyline?.encodedPolyline;
+    const route = data.routes?.[0];
 
-    if (!encodedPolyline) {
-      throw new Error("No polyline in Routes API response");
+    if (!route) throw new Error("No route in Routes API response");
+
+    const encodedPolyline = route.polyline?.encodedPolyline;
+    if (!encodedPolyline) throw new Error("No polyline in Routes API response");
+
+    // Store polyline for map drawing
+    storeRoute(validStops, encodedPolyline);
+
+    // Store road-accurate drive distance — converts meters to miles
+    if (route.distanceMeters) {
+      const miles = metersToMiles(route.distanceMeters);
+      storeMileage(from, to, miles);
+      console.log("[fetchDriveSegment] stored distance:", miles.toFixed(1), "miles");
     }
 
-    storeRoute(validStops, encodedPolyline);
     const polyline = drawStoredRoute(map, encodedPolyline, color);
     console.log("[fetchDriveSegment] polyline drawn and cached ✓");
 
@@ -117,8 +134,6 @@ export function useRouteDrawer() {
   }, [drawStoredRoute]);
 
   // Main entry point — processes every segment between consecutive stops
-  // Each segment reads its own travelMode from the destination stop object
-  // activeModes is a Set controlling which modes are visible
   const fetchAndDrawRoute = useCallback((
     map,
     stops,
@@ -138,50 +153,27 @@ export function useRouteDrawer() {
       const allPolylines = [];
       let   anyFromApi   = false;
 
-      // Walk every consecutive pair of stops and draw the correct segment type
       for (let i = 1; i < validStops.length; i++) {
         const from = validStops[i - 1];
         const to   = validStops[i];
-
-        // travelMode lives on the destination end of each segment
         const mode = to.travelMode || TRAVEL_MODES.DRIVE;
 
-        console.log(
-          `[fetchAndDrawRoute] segment ${i}:`,
-          `${from.name?.split(",")[0]} → ${to.name?.split(",")[0]}`,
-          `| mode: ${mode}`
-        );
-
-        // Skip if this mode is not in the active filter set
         if (!activeModes.has(mode)) {
           console.log(`[fetchAndDrawRoute] skipping — ${mode} is filtered out`);
           continue;
         }
 
         if (mode === TRAVEL_MODES.FLIGHT) {
-          // Curved animated arc — amber color, no API call
           console.log("[fetchAndDrawRoute] drawing flight arc");
-          const lines = drawFlightArc(
-            map,
-            from,
-            to,
-            TRAVEL_MODE_COLORS.FLIGHT
-          );
+          const lines = drawFlightArc(map, from, to, TRAVEL_MODE_COLORS.FLIGHT);
           if (lines) allPolylines.push(...lines.filter(Boolean));
 
         } else if (mode === TRAVEL_MODES.BOAT) {
-          // Dashed curved arc — cyan color, no API call
           console.log("[fetchAndDrawRoute] drawing boat route");
-          const lines = drawBoatRoute(
-            map,
-            from,
-            to,
-            TRAVEL_MODE_COLORS.BOAT
-          );
+          const lines = drawBoatRoute(map, from, to, TRAVEL_MODE_COLORS.BOAT);
           if (lines) allPolylines.push(...lines.filter(Boolean));
 
         } else {
-          // DRIVE — road following polyline, cached after first call
           try {
             const result = await fetchDriveSegment(map, from, to, color);
             if (result?.polyline) {
@@ -190,7 +182,6 @@ export function useRouteDrawer() {
             }
           } catch (err) {
             console.warn("[fetchAndDrawRoute] drive segment failed:", err.message);
-            // Fall back to a dashed straight geodesic line
             const fallback = new window.google.maps.Polyline({
               path: [
                 { lat: from.lat, lng: from.lng },
