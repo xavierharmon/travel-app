@@ -1,8 +1,6 @@
-![Image description here](https://github.com/xavierharmon/xavierharmon/blob/main/movie.gif)
-## Data is my playground. I have 4+ years of professional experince as a Data Analyst. I enjoy learning the theory behind statistical models, breaking down the math behind the scences and rebuilding the models to understand how they work. I have a passion for both telling a story with Data and for helping to identify trends and predict future outcomes with Data.<br>
+# Roadtrip App
+this is a project to learn AI, prompting, and introduce myself to JS. I am creating an application that can show all of my travels around the U.S. and store photos and memories like a local virtual scrapbook. 
 
-## I Enjoy sharing what I know with others and learning from those with more experince than myself. <br>
+Using AI to help generate the guts of the code and help me learn JS while also trying to troubleshoot certain things myself to learn more about how this world works.
 
-> ## I have experince with Python, SQL, R, Tableau, and AWS Cloud Resources. <br> <br>
-
-## test2
+Being so used to SQL, Python, etc. as an analyst, this is a new challenge I am excited for.ß
