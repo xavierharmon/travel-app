@@ -67,6 +67,14 @@ export default function TripCard({ trip, onView, onEdit, onDelete }) {
                     ⛵ {formatMiles(mileage.boat)}
                   </span>
                 )}
+                {mileage.train > 0 && (
+                  <span
+                    className={styles.mileagePill}
+                    style={{ color: TRAVEL_MODE_COLORS[TRAVEL_MODES.TRAIN] }}
+                  >
+                    🚞 {formatMiles(mileage.train)}
+                  </span>
+                )}
                 <span className={styles.mileageTotal}>
                   📏 {formatMiles(mileage.total)}
                 </span>
