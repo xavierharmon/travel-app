@@ -96,7 +96,7 @@ export function drawBoatRoute(map, from, to, color = "#06b6d4") {
     icons: [{
       icon: {
         path:          "M 0,-1 0,1",
-        strokeOpacity: 1,
+        strokeOpacity: 0.3,
         strokeColor:   color,
         scale:         3,
       },
