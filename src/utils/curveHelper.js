@@ -107,3 +107,33 @@ export function drawBoatRoute(map, from, to, color = "#06b6d4") {
 
   return [polyline];
 }
+
+// Draws a boat route on the map — dashed curved cyan line
+export function drawTrainRoute(map, from, to, color = "#5F8575") {
+  if (!window.google || !from?.lat || !to?.lat) return null;
+
+  // Boats arc less dramatically than flights
+  const path = buildCurvedPath(from, to, 100, 0.10);
+
+  const polyline = new window.google.maps.Polyline({
+    path,
+    geodesic:      false,
+    strokeColor:   color,
+    strokeOpacity: 0.8,
+    strokeWeight:  2.5,
+    strokeDashArray: "8 6",
+    map,
+    icons: [{
+      icon: {
+        path:          "M 0,-1 0,1",
+        strokeOpacity: 0.3,
+        strokeColor:   color,
+        scale:         3,
+      },
+      offset: "0",
+      repeat: "18px",
+    }],
+  });
+
+  return [polyline];
+}

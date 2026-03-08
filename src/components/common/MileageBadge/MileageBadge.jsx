@@ -6,7 +6,7 @@ import styles from "./MileageBadge.module.css";
 export default function MileageBadge({ mileage, compact = false }) {
   if (!mileage) return null;
 
-  const { drive, flight, boat, total, hasUncachedDrive } = mileage;
+  const { drive, flight, boat, train, total, hasUncachedDrive } = mileage;
   const hasAny = total > 0;
   if (!hasAny) return null;
 
@@ -68,6 +68,19 @@ export default function MileageBadge({ mileage, compact = false }) {
             style={{ color: TRAVEL_MODE_COLORS[TRAVEL_MODES.BOAT] }}
           >
             {formatMiles(boat)}
+          </span>
+        </div>
+      )}  
+
+      {train > 0 && (
+        <div className={styles.row}>
+          <span className={styles.icon}>🚞</span>
+          <span className={styles.label}>Train</span>
+          <span
+            className={styles.value}
+            style={{ color: TRAVEL_MODE_COLORS[TRAVEL_MODES.TRAIN] }}
+          >
+            {formatMiles(train)}
           </span>
         </div>
       )}

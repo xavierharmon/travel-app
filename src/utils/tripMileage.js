@@ -26,6 +26,7 @@ export function computeTripMileage(trip) {
   let driveMiles  = 0;
   let flightMiles = 0;
   let boatMiles   = 0;
+  let trainMiles  = 0;
   let hasUncachedDrive = false;
 
   for (let i = 1; i < stops.length; i++) {
@@ -39,6 +40,9 @@ export function computeTripMileage(trip) {
 
     } else if (mode === TRAVEL_MODES.BOAT) {
       boatMiles += dist;
+
+    } else if (mode === TRAVEL_MODES.TRAIN) {
+      trainMiles += dist;
 
     } else {
       // Drive — prefer cached road distance over straight-line estimate
@@ -54,12 +58,13 @@ export function computeTripMileage(trip) {
     }
   }
 
-  const totalMiles = driveMiles + flightMiles + boatMiles;
+  const totalMiles = driveMiles + flightMiles + boatMiles + trainMiles;
 
   return {
     drive:           driveMiles,
     flight:          flightMiles,
     boat:            boatMiles,
+    train:           trainMiles,
     total:           totalMiles,
     hasUncachedDrive, // true = drive miles are estimated, not road-accurate yet
   };
@@ -70,6 +75,7 @@ export function computeAggregateMileage(trips) {
   let drive  = 0;
   let flight = 0;
   let boat   = 0;
+  let train  = 0;
   let hasUncachedDrive = false;
 
   trips.forEach(trip => {
@@ -78,6 +84,7 @@ export function computeAggregateMileage(trips) {
     drive  += m.drive;
     flight += m.flight;
     boat   += m.boat;
+    train  += m.train;
     if (m.hasUncachedDrive) hasUncachedDrive = true;
   });
 
@@ -85,7 +92,8 @@ export function computeAggregateMileage(trips) {
     drive,
     flight,
     boat,
-    total: drive + flight + boat,
+    train,
+    total: drive + flight + boat + train,
     hasUncachedDrive,
   };
 }

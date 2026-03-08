@@ -26,7 +26,7 @@ export default function MapPage({ trip, onBack, onEdit }) {
   const [fromCache,   setFromCache]   = useState(null);
   const [mileage,     setMileage]     = useState(null);
   const [activeModes, setActiveModes] = useState(
-    new Set([TRAVEL_MODES.DRIVE, TRAVEL_MODES.FLIGHT, TRAVEL_MODES.BOAT])
+    new Set([TRAVEL_MODES.DRIVE, TRAVEL_MODES.FLIGHT, TRAVEL_MODES.BOAT, TRAVEL_MODES.TRAIN])
   );
 
   // Build full stops array with destinationTravelMode attached

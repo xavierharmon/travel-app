@@ -8,7 +8,7 @@ import {
   TRAVEL_MODES,
   TRAVEL_MODE_COLORS,
 } from "@/constants";
-import { drawFlightArc, drawBoatRoute } from "@/utils/curveHelper";
+import { drawFlightArc, drawBoatRoute, drawTrainRoute} from "@/utils/curveHelper";
 
 export function useRouteDrawer() {
 
@@ -173,7 +173,12 @@ export function useRouteDrawer() {
           const lines = drawBoatRoute(map, from, to, TRAVEL_MODE_COLORS.BOAT);
           if (lines) allPolylines.push(...lines.filter(Boolean));
 
-        } else {
+        } else if (mode === TRAVEL_MODES.TRAIN) {
+          console.log("[fetchAndDrawRoute] drawing boat route");
+          const lines = drawTrainRoute(map, from, to, TRAVEL_MODE_COLORS.TRAIN);
+          if (lines) allPolylines.push(...lines.filter(Boolean));
+
+        }else {
           try {
             const result = await fetchDriveSegment(map, from, to, color);
             if (result?.polyline) {

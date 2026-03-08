@@ -19,18 +19,21 @@ export const TRAVEL_MODES = {
   DRIVE:  "DRIVE",
   FLIGHT: "FLIGHT",
   BOAT:   "BOAT",
+  TRAIN:  "TRAIN",
 };
 
 export const TRAVEL_MODE_COLORS = {
   DRIVE:  "#6366f1",  // indigo
   FLIGHT: "#f59e0b",  // amber
   BOAT:   "#06b6d4",  // cyan
+  TRAIN:  "#50C878",  // emerald
 };
 
 export const TRAVEL_MODE_LABELS = {
   DRIVE:  "🚗 Drive",
   FLIGHT: "✈️ Flight",
   BOAT:   "⛵ Boat",
+  TRAIN:  "🚞 Train",
 };
 
 export const MAP_DEFAULTS = {
