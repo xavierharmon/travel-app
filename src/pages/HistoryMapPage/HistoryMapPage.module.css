@@ -148,6 +148,16 @@
   overflow:      hidden;
   text-overflow: ellipsis;
   white-space:   nowrap;
+  display:       block;
+}
+.tripBtnMileage {
+  flex:          1;
+  font-size:     var(--font-size-xs);
+  font-weight:   500;
+  overflow:      hidden;
+  text-overflow: ellipsis;
+  white-space:   nowrap;
+  display:       block;
 }
 
 .tripBtnCount {
@@ -157,12 +167,14 @@
   border-radius: var(--radius-sm);
   padding:       1px 6px;
   flex-shrink:   0;
+  display:       block;
 }
 
 .tripBtnDate {
   font-size:   var(--font-size-xs);
   color:       var(--color-text-subtle);
   flex-shrink: 0;
+  display:     block;
 }
 
 .emptyState {

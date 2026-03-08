@@ -412,6 +412,39 @@ export default function HistoryMapPage({ onBack }) {
 
         {/* Sidebar */}
         <aside className={styles.sidebar}>
+
+          {/* Aggregate mileage breakdown */}
+          {aggregateMileage && aggregateMileage.total > 0 && (
+            <div className={styles.mileageSection}>
+              <p className={styles.sidebarLabel}>
+                {activeTripId ? "Trip mileage" : "All trips mileage"}
+              </p>
+              <MileageBadge
+                mileage={
+                  activeTripId
+                    ? computeTripMileage(trips.find(t => t.id === activeTripId))
+                    : aggregateMileage
+                }
+              />
+            </div>
+          )}
+
+          {/* Travel mode legend */}
+          <div className={styles.legendSection}>
+            <p className={styles.sidebarLabel}>Travel modes</p>
+            {Object.values(TRAVEL_MODES).map(mode => (
+              <div key={mode} className={styles.legendItem}>
+                <span
+                  className={styles.legendLine}
+                  style={{ background: TRAVEL_MODE_COLORS[mode] }}
+                />
+                <span className={styles.legendLabel}>
+                  {TRAVEL_MODE_LABELS[mode]}
+                </span>
+              </div>
+            ))}
+          </div>
+
           <p className={styles.sidebarLabel}>Filter by trip</p>
 
           {/* All trips */}
@@ -448,6 +481,11 @@ export default function HistoryMapPage({ onBack }) {
                   <span className={styles.tripBtnName}>
                     {trip.name || "Untitled"}
                   </span>
+                  {trip.date && (
+                  <span className={styles.tripBtnDate}>
+                    {trip.date.slice(0, 7)}
+                  </span>
+                  )}
                   {tripMileage && tripMileage.total > 0 && (
                     <span className={styles.tripBtnMileage}>
                       {formatMiles(tripMileage.total)}
@@ -455,11 +493,6 @@ export default function HistoryMapPage({ onBack }) {
                     </span>
                   )}
                 </div>
-                {trip.date && (
-                  <span className={styles.tripBtnDate}>
-                    {trip.date.slice(0, 7)}
-                  </span>
-                )}
               </button>
             );
           })}
@@ -470,38 +503,6 @@ export default function HistoryMapPage({ onBack }) {
               to a trip to see it here.
             </p>
           )}
-
-          {/* Aggregate mileage breakdown */}
-          {aggregateMileage && aggregateMileage.total > 0 && (
-            <div className={styles.mileageSection}>
-              <p className={styles.sidebarLabel}>
-                {activeTripId ? "Trip mileage" : "All trips mileage"}
-              </p>
-              <MileageBadge
-                mileage={
-                  activeTripId
-                    ? computeTripMileage(trips.find(t => t.id === activeTripId))
-                    : aggregateMileage
-                }
-              />
-            </div>
-          )}
-
-          {/* Travel mode legend */}
-          <div className={styles.legendSection}>
-            <p className={styles.sidebarLabel}>Travel modes</p>
-            {Object.values(TRAVEL_MODES).map(mode => (
-              <div key={mode} className={styles.legendItem}>
-                <span
-                  className={styles.legendLine}
-                  style={{ background: TRAVEL_MODE_COLORS[mode] }}
-                />
-                <span className={styles.legendLabel}>
-                  {TRAVEL_MODE_LABELS[mode]}
-                </span>
-              </div>
-            ))}
-          </div>
         </aside>
 
         {/* Map area */}
