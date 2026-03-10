@@ -56,7 +56,7 @@ export function drawFlightArc(map, from, to, color = "#f59e0b") {
       // Dashed pattern with solid line segments
       icon: {
         path:          "M 0,-1 0,1",
-        strokeOpacity: 0.9,
+        strokeOpacity: 0,
         strokeColor:   color,
         scale:         3,
       },
@@ -70,7 +70,7 @@ export function drawFlightArc(map, from, to, color = "#f59e0b") {
     path,
     geodesic:      false,
     strokeColor:   color,
-    strokeOpacity: 0.75,
+    strokeOpacity: 0.35,
     strokeWeight:  2.5,
     map,
   });

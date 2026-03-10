@@ -1,79 +1,225 @@
 .page {
-  min-height: 100vh;
-  display:    flex;
+  min-height:     100vh;
+  display:        flex;
   flex-direction: column;
 }
 
+/* ── Header ─────────────────────────────────── */
 .header {
   display:         flex;
   align-items:     center;
   justify-content: space-between;
-  padding:         var(--space-xl) var(--space-xl);
+  padding:         var(--space-xl);
   gap:             var(--space-md);
   max-width:       860px;
   width:           100%;
   margin:          0 auto;
+  flex-wrap:       wrap;
 }
 
-.brand { display: flex; align-items: center; gap: var(--space-md); }
+.brand {
+  display:     flex;
+  align-items: center;
+  gap:         var(--space-md);
+}
 
 .brandIcon {
-  font-size:     28px;
-  background:    var(--gradient-primary);
-  border-radius: var(--radius-lg);
-  width:         100px;
-  height:        100px;
-  display:       flex;
-  align-items:   center;
+  width:           64px;
+  height:          64px;
+  border-radius:   var(--radius-lg);
+  overflow:        hidden;
+  flex-shrink:     0;
+  background:      var(--color-surface);
+  border:          1px solid var(--color-border);
+  display:         flex;
+  align-items:     center;
   justify-content: center;
 }
 
+.brandLogo {
+  width:      100%;
+  height:     100%;
+  object-fit: contain;
+}
+
 .title {
-  font-size:   var(--font-size-2xl);
-  font-weight: 800;
-  background:  var(--gradient-heading);
+  font-size:               var(--font-size-2xl);
+  font-weight:             800;
+  background:              var(--gradient-heading);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
-  background-clip: text;
+  background-clip:         text;
 }
 
-.subtitle { font-size: var(--font-size-sm); color: var(--color-text-subtle); }
-
-.main {
-  flex:       1;
-  max-width:  860px;
-  width:      100%;
-  margin:     0 auto;
-  padding:    0 var(--space-xl) var(--space-2xl);
+.subtitle {
+  font-size: var(--font-size-sm);
+  color:     var(--color-text-subtle);
 }
 
+/* ── Error banner ────────────────────────────── */
 .errorBanner {
   background:    rgba(239, 68, 68, 0.1);
   border:        1px solid var(--color-danger);
   border-radius: var(--radius-md);
   color:         var(--color-danger);
   padding:       var(--space-md);
-  margin:        0 var(--space-xl) var(--space-md);
+  margin:        0 auto var(--space-md);
   max-width:     860px;
-  width:         100%;
-  margin-left:   auto;
-  margin-right:  auto;
+  width:         calc(100% - var(--space-xl) * 2);
+}
+
+/* ── Sort bar ────────────────────────────────── */
+.sortBar {
+  display:     flex;
+  align-items: center;
+  gap:         var(--space-sm);
+  max-width:   860px;
+  width:       100%;
+  margin:      0 auto;
+  padding:     0 var(--space-xl) var(--space-md);
+  flex-wrap:   wrap;
+}
+
+.sortLabel {
+  font-size:      var(--font-size-xs);
+  font-weight:    600;
+  color:          var(--color-text-subtle);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  flex-shrink:    0;
+}
+
+.sortBtns {
+  display:  flex;
+  gap:      var(--space-xs);
+  flex-wrap: wrap;
+}
+
+.sortBtn {
+  padding:       5px 12px;
+  border-radius: var(--radius-md);
+  font-size:     var(--font-size-xs);
+  font-weight:   600;
+  color:         var(--color-text-muted);
+  background:    var(--color-surface);
+  border:        1px solid var(--color-border);
+  cursor:        pointer;
+  transition:    all var(--transition);
+  font-family:   var(--font-sans);
+  white-space:   nowrap;
+}
+
+.sortBtn:hover {
+  border-color: var(--color-primary);
+  color:        var(--color-text);
+}
+
+.sortBtnActive {
+  background:   var(--color-primary) !important;
+  border-color: var(--color-primary) !important;
+  color:        #fff !important;
+}
+
+/* ── Main content ───────────────────────────── */
+.main {
+  flex:      1;
+  max-width: 860px;
+  width:     100%;
+  margin:    0 auto;
+  padding:   0 var(--space-xl) var(--space-2xl);
 }
 
 .empty {
-  text-align:    center;
-  padding:       80px var(--space-md);
-  background:    var(--color-surface);
-  border-radius: var(--radius-xl);
-  border:        1px dashed var(--color-border);
-  color:         var(--color-text-subtle);
-  font-size:     var(--font-size-md);
-  display:       flex;
-  flex-direction: column;
-  align-items:   center;
-  gap:           var(--space-md);
+  text-align:      center;
+  padding:         80px var(--space-md);
+  background:      var(--color-surface);
+  border-radius:   var(--radius-xl);
+  border:          1px dashed var(--color-border);
+  color:           var(--color-text-subtle);
+  font-size:       var(--font-size-md);
+  display:         flex;
+  flex-direction:  column;
+  align-items:     center;
+  gap:             var(--space-md);
 }
 
-.emptyIcon { font-size: 52px; }
+.tripList {
+  display:        flex;
+  flex-direction: column;
+  gap:            var(--space-md);
+}
 
-.tripList { display: flex; flex-direction: column; gap: var(--space-md); }
+/* ── Footer ─────────────────────────────────── */
+.footer {
+  display:         flex;
+  align-items:     center;
+  justify-content: space-between;
+  padding:         var(--space-md) var(--space-xl);
+  border-top:      1px solid var(--color-border);
+  max-width:       860px;
+  width:           100%;
+  margin:          0 auto;
+  flex-wrap:       wrap;
+  gap:             var(--space-md);
+}
+
+.footerLeft  { flex: 1; min-width: 200px; }
+.footerRight {
+  display:     flex;
+  align-items: center;
+  gap:         var(--space-sm);
+  flex-shrink: 0;
+}
+
+/* Storage bar */
+.storageInfo {
+  display:        flex;
+  flex-direction: column;
+  gap:            4px;
+}
+
+.storageRow {
+  display:         flex;
+  justify-content: space-between;
+  align-items:     center;
+}
+
+.storageLabel { font-size: 11px; color: var(--color-text-subtle); }
+.storagePct   { font-size: 11px; font-weight: 600; }
+
+.storageBar {
+  height:        4px;
+  background:    var(--color-border);
+  border-radius: 2px;
+  overflow:      hidden;
+}
+
+.storageBarFill {
+  height:        100%;
+  border-radius: 2px;
+  transition:    width 0.3s ease;
+}
+
+.storageWarning {
+  font-size: 11px;
+  color:     var(--color-danger);
+}
+
+/* Cache info */
+.cacheLabel {
+  font-size: 12px;
+  color:     var(--color-text-subtle);
+}
+
+.clearCacheBtn {
+  font-size:       12px;
+  color:           var(--color-text-subtle);
+  background:      none;
+  border:          none;
+  cursor:          pointer;
+  text-decoration: underline;
+  padding:         0;
+  font-family:     var(--font-sans);
+}
+
+.clearCacheBtn:hover { color: var(--color-danger); }

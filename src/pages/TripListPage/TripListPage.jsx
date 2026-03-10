@@ -3,9 +3,58 @@ import styles from "./TripListPage.module.css";
 import { useTrips } from "@/hooks/useTrips";
 import { getStorageUsage } from "@/utils/storage";
 import { getRouteCacheStats, clearAllStoredRoutes } from "@/utils/routeStorage";
+import { computeTripMileage } from "@/utils/tripMileage";
 import TripCard from "@/components/trips/TripCard";
 import Button from "@/components/common/Button";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
+
+const SORT_OPTIONS = [
+  { value: "date-newest", label: "Newest" },
+  { value: "date-oldest", label: "Oldest" },
+  { value: "miles-most",  label: "Most Miles" },
+  { value: "miles-least", label: "Least Miles" },
+];
+
+function sortTrips(trips, sortBy) {
+  const sorted = [...trips]; // never mutate the original array
+
+  switch (sortBy) {
+    case "date-newest":
+      return sorted.sort((a, b) => {
+        // Trips without a date fall to the bottom
+        if (!a.date && !b.date) return 0;
+        if (!a.date) return 1;
+        if (!b.date) return -1;
+        return b.date.localeCompare(a.date);
+      });
+
+    case "date-oldest":
+      return sorted.sort((a, b) => {
+        // Trips without a date fall to the bottom
+        if (!a.date && !b.date) return 0;
+        if (!a.date) return 1;
+        if (!b.date) return -1;
+        return a.date.localeCompare(b.date);
+      });
+
+    case "miles-most":
+      return sorted.sort((a, b) => {
+        const aMiles = computeTripMileage(a)?.total || 0;
+        const bMiles = computeTripMileage(b)?.total || 0;
+        return bMiles - aMiles;
+      });
+
+    case "miles-least":
+      return sorted.sort((a, b) => {
+        const aMiles = computeTripMileage(a)?.total || 0;
+        const bMiles = computeTripMileage(b)?.total || 0;
+        return aMiles - bMiles;
+      });
+
+    default:
+      return sorted;
+  }
+}
 
 export default function TripListPage({
   onNewTrip,
@@ -14,6 +63,8 @@ export default function TripListPage({
   onViewHistory,
 }) {
   const { trips, loading, error, deleteTrip } = useTrips();
+
+  const [sortBy,       setSortBy]       = useState("date-newest");
   const [storageUsage, setStorageUsage] = useState(null);
   const [cacheStats,   setCacheStats]   = useState(null);
 
@@ -21,6 +72,12 @@ export default function TripListPage({
     setStorageUsage(getStorageUsage());
     setCacheStats(getRouteCacheStats());
   }, [trips]);
+
+  // Recompute sorted list only when trips or sortBy changes
+  const sortedTrips = useMemo(
+    () => sortTrips(trips, sortBy),
+    [trips, sortBy]
+  );
 
   function handleDelete(id) {
     if (window.confirm("Delete this trip? This cannot be undone.")) {
@@ -76,6 +133,24 @@ export default function TripListPage({
         <div className={styles.errorBanner}>{error}</div>
       )}
 
+      {/* ── Sort controls ────────────────────────── */}
+      {!loading && trips.length > 1 && (
+        <div className={styles.sortBar}>
+          <span className={styles.sortLabel}>Sort by</span>
+          <div className={styles.sortBtns}>
+            {SORT_OPTIONS.map(opt => (
+              <button
+                key={opt.value}
+                className={`${styles.sortBtn} ${sortBy === opt.value ? styles.sortBtnActive : ""}`}
+                onClick={() => setSortBy(opt.value)}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* ── Trip list ────────────────────────────── */}
       <main className={styles.main}>
         {loading ? (
@@ -86,17 +161,20 @@ export default function TripListPage({
               src="/logo.png"
               alt="Start your adventure"
               style={{
-                width:      100,
-                height:     100,
-                objectFit:  "contain",
-                opacity:    0.5,
+                width:     100,
+                height:    100,
+                objectFit: "contain",
+                opacity:   0.5,
               }}
             />
-            <p>No trips yet. Click <strong>New Trip</strong> to start your adventure!</p>
+            <p>
+              No trips yet. Click <strong>New Trip</strong> to start
+              your adventure!
+            </p>
           </div>
         ) : (
           <div className={styles.tripList}>
-            {trips.map(trip => (
+            {sortedTrips.map(trip => (
               <TripCard
                 key={trip.id}
                 trip={trip}
