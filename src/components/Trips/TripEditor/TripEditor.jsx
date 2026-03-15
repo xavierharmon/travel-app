@@ -1,4 +1,5 @@
 // src/components/trips/TripEditor/TripEditor.jsx
+import { useRef, useState } from "react";
 import styles from "./TripEditor.module.css";
 import PlaceInput from "@/components/trips/PlaceInput";
 import StopCard from "@/components/trips/StopCard";
@@ -8,11 +9,24 @@ import { generateId } from "@/utils/imageHelpers";
 import { TRAVEL_MODES, TRAVEL_MODE_LABELS, TRAVEL_MODE_COLORS } from "@/constants";
 
 export default function TripEditor({ form, errors, onChange }) {
+  // Track which stop index is being dragged
+  const dragIndexRef = useRef(null);
+  // Track visual drag-over index for highlight
+  const [dragOverIndex, setDragOverIndex] = useState(null);
+
   function set(field, value) {
     onChange({ ...form, [field]: value });
   }
 
+  // ── Stop management ──────────────────────────────────────────
+
+  /** Append a new blank stop at the end */
   function addStop() {
+    insertStopAt((form.stops || []).length);
+  }
+
+  /** Insert a blank stop at a specific index */
+  function insertStopAt(index) {
     const newStop = {
       id:          generateId(),
       name:        "",
@@ -22,7 +36,9 @@ export default function TripEditor({ form, errors, onChange }) {
       photos:      [],
       travelMode:  TRAVEL_MODES.DRIVE,
     };
-    set("stops", [...(form.stops || []), newStop]);
+    const stops = [...(form.stops || [])];
+    stops.splice(index, 0, newStop);
+    set("stops", stops);
   }
 
   function updateStop(id, updated) {
@@ -33,7 +49,48 @@ export default function TripEditor({ form, errors, onChange }) {
     set("stops", form.stops.filter(s => s.id !== id));
   }
 
+  // ── Drag-and-drop reordering ──────────────────────────────────
+
+  function handleDragStart(e, index) {
+    dragIndexRef.current = index;
+    e.dataTransfer.effectAllowed = "move";
+    // Slight delay so the ghost image renders before we style the element
+    requestAnimationFrame(() => {
+      e.target.closest(`.${styles.stopRow}`)?.classList.add(styles.dragging);
+    });
+  }
+
+  function handleDragEnd(e) {
+    e.target.closest(`.${styles.stopRow}`)?.classList.remove(styles.dragging);
+    dragIndexRef.current = null;
+    setDragOverIndex(null);
+  }
+
+  function handleDragOver(e, index) {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    setDragOverIndex(index);
+  }
+
+  function handleDrop(e, dropIndex) {
+    e.preventDefault();
+    const fromIndex = dragIndexRef.current;
+    if (fromIndex === null || fromIndex === dropIndex) {
+      setDragOverIndex(null);
+      return;
+    }
+    const stops = [...(form.stops || [])];
+    const [moved] = stops.splice(fromIndex, 1);
+    stops.splice(dropIndex, 0, moved);
+    set("stops", stops);
+    setDragOverIndex(null);
+  }
+
+  // ── Render ────────────────────────────────────────────────────
+
   if (!form) return null;
+
+  const stops = form.stops || [];
 
   return (
     <div className={styles.editor}>
@@ -85,7 +142,7 @@ export default function TripEditor({ form, errors, onChange }) {
       <section className={styles.section}>
         <h3 className={styles.sectionTitle}>Route</h3>
 
-        {/* Origin — no travel mode, this is the start */}
+        {/* Origin */}
         <div className={styles.routeRow}>
           <span className={`${styles.routeDot} ${styles.originDot}`} />
           <div className={styles.routeField}>
@@ -98,35 +155,55 @@ export default function TripEditor({ form, errors, onChange }) {
           </div>
         </div>
 
-        {/* Connector line from origin down */}
-        <div className={styles.connectorLineOnly} />
+        {/* Insert-before-first-stop button */}
+        <InsertStopButton onClick={() => insertStopAt(0)} />
 
         {/* Intermediate stops */}
-        {(form.stops || []).length > 0 && (
+        {stops.length > 0 && (
           <div className={styles.connectorGroup}>
-            {form.stops.map((stop, i) => (
-              <div key={stop.id} className={styles.stopRow}>
-                <div className={styles.connectorLeft}>
-                  <span className={styles.connectorLine} />
-                  <span className={`${styles.routeDot} ${styles.stopDot}`} />
-                  <span className={styles.connectorLine} />
+            {stops.map((stop, i) => (
+              <div key={stop.id}>
+                {/* Draggable stop row */}
+                <div
+                  className={`${styles.stopRow} ${dragOverIndex === i ? styles.dragOver : ""}`}
+                  draggable
+                  onDragStart={e => handleDragStart(e, i)}
+                  onDragEnd={handleDragEnd}
+                  onDragOver={e => handleDragOver(e, i)}
+                  onDrop={e => handleDrop(e, i)}
+                >
+                  {/* Drag handle + connector */}
+                  <div className={styles.connectorLeft}>
+                    <span className={styles.connectorLine} />
+                    <span
+                      className={styles.dragHandle}
+                      title="Drag to reorder"
+                    >
+                      ⠿
+                    </span>
+                    <span className={`${styles.routeDot} ${styles.stopDot}`} />
+                    <span className={styles.connectorLine} />
+                  </div>
+
+                  <div className={styles.stopCardWrap}>
+                    <StopCard
+                      stop={stop}
+                      index={i}
+                      onChange={updated => updateStop(stop.id, updated)}
+                      onRemove={() => removeStop(stop.id)}
+                    />
+                  </div>
                 </div>
-                <div className={styles.stopCardWrap}>
-                  <StopCard
-                    stop={stop}
-                    index={i}
-                    onChange={updated => updateStop(stop.id, updated)}
-                    onRemove={() => removeStop(stop.id)}
-                  />
-                </div>
+
+                {/* Insert-between button after each stop */}
+                <InsertStopButton onClick={() => insertStopAt(i + 1)} />
               </div>
             ))}
           </div>
         )}
 
-        {/* Add Stop button */}
+        {/* Add Stop button (appends to end) */}
         <div className={styles.addStopRow}>
-          <span className={styles.connectorLineShort} />
           <button className={styles.addStopBtn} onClick={addStop}>
             <span className={styles.addStopIcon}>+</span>
             Add Stop
@@ -134,7 +211,7 @@ export default function TripEditor({ form, errors, onChange }) {
           <span className={styles.connectorLineShort} />
         </div>
 
-        {/* Destination — has travel mode selector */}
+        {/* Destination */}
         <div className={styles.routeRow}>
           <span className={`${styles.routeDot} ${styles.destDot}`} />
           <div className={styles.routeField}>
@@ -144,33 +221,47 @@ export default function TripEditor({ form, errors, onChange }) {
               onSelect={v => set("destination", v)}
               placeholder="Where did you end up?"
             />
-            {/* Travel mode for the last leg — how did you get to destination */}
-            <div className={styles.travelModeRow}>
-              <span className={styles.travelModeLabel}>Got here by</span>
-              <div className={styles.travelModeBtns}>
-                {Object.values(TRAVEL_MODES).map(mode => {
-                  const isActive = (form.destinationTravelMode || TRAVEL_MODES.DRIVE) === mode;
-                  return (
-                    <button
-                      key={mode}
-                      className={styles.travelModeBtn}
-                      style={{
-                        background:  isActive ? TRAVEL_MODE_COLORS[mode] : "var(--color-surface-2)",
-                        borderColor: isActive ? TRAVEL_MODE_COLORS[mode] : "var(--color-border)",
-                        color:       isActive ? "#fff"                   : "var(--color-text-muted)",
-                      }}
-                      onClick={() => set("destinationTravelMode", mode)}
-                    >
-                      {TRAVEL_MODE_LABELS[mode]}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
           </div>
         </div>
 
+        {/* Destination travel mode */}
+        <div className={styles.travelModeRow}>
+          <span className={styles.travelModeLabel}>Got there by</span>
+          <div className={styles.travelModeBtns}>
+            {Object.values(TRAVEL_MODES).map(mode => (
+              <button
+                key={mode}
+                className={`${styles.travelModeBtn} ${
+                  (form.destinationTravelMode || TRAVEL_MODES.DRIVE) === mode
+                    ? styles.travelModeBtnActive
+                    : ""
+                }`}
+                style={
+                  (form.destinationTravelMode || TRAVEL_MODES.DRIVE) === mode
+                    ? { background: TRAVEL_MODE_COLORS[mode], borderColor: TRAVEL_MODE_COLORS[mode] }
+                    : {}
+                }
+                onClick={() => set("destinationTravelMode", mode)}
+              >
+                {TRAVEL_MODE_LABELS[mode]}
+              </button>
+            ))}
+          </div>
+        </div>
       </section>
+    </div>
+  );
+}
+
+// ── Small inline insert-stop button rendered between stops ──────
+function InsertStopButton({ onClick }) {
+  return (
+    <div className={styles.insertStopRow}>
+      <span className={styles.connectorLineShort} />
+      <button className={styles.insertStopBtn} onClick={onClick} title="Insert stop here">
+        <span className={styles.insertStopIcon}>+</span>
+      </button>
+      <span className={styles.connectorLineShort} />
     </div>
   );
 }

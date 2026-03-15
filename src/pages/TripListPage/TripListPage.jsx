@@ -61,6 +61,7 @@ export default function TripListPage({
   onEditTrip,
   onViewMap,
   onViewHistory,
+  onViewGames,
 }) {
   const { trips, loading, error, deleteTrip } = useTrips();
 
@@ -118,7 +119,11 @@ export default function TripListPage({
           </div>
         </div>
 
+
         <div style={{ display: "flex", gap: "var(--space-sm)" }}>
+          <Button variant="secondary" onClick={onViewGames} size="md">
+            🏆 Sports Tracker
+          </Button>
           <Button variant="secondary" onClick={onViewHistory} size="md">
             🗺️ Trip History
           </Button>

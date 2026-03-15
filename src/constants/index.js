@@ -1,12 +1,14 @@
-// src/constants/index.js
+// src/constants/index.js  (add GAMES and GAME_EDIT to the VIEWS object)
 export const STORAGE_KEY     = "road_trip_memories_v1";
 export const ROUTE_CACHE_KEY = "road_trip_routes_v1";
 
 export const VIEWS = {
-  LIST:    "list",
-  EDIT:    "edit",
-  MAP:     "map",
-  HISTORY: "history",
+  LIST:      "list",
+  EDIT:      "edit",
+  MAP:       "map",
+  HISTORY:   "history",
+  GAMES:     "games",
+  GAME_EDIT: "game_edit",
 };
 
 export const STOP_COLORS = {
@@ -23,10 +25,10 @@ export const TRAVEL_MODES = {
 };
 
 export const TRAVEL_MODE_COLORS = {
-  DRIVE:  "#6366f1",  // indigo
-  FLIGHT: "#f59e0b",  // amber
-  BOAT:   "#06b6d4",  // cyan
-  TRAIN:  "#50C878",  // emerald
+  DRIVE:  "#6366f1",
+  FLIGHT: "#f59e0b",
+  BOAT:   "#06b6d4",
+  TRAIN:  "#50C878",
 };
 
 export const TRAVEL_MODE_LABELS = {

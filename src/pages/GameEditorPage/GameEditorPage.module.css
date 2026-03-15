@@ -1,0 +1,301 @@
+/* src/pages/GameEditorPage/GameEditorPage.module.css */
+
+.page { min-height: 100vh; background: var(--color-bg); }
+
+.inner {
+  max-width:  680px;
+  margin:     0 auto;
+  padding:    var(--space-lg) var(--space-xl) 100px;
+}
+
+/* ── Top bar ─────────────────────────────────── */
+.topBar {
+  display:         flex;
+  align-items:     center;
+  justify-content: space-between;
+  margin-bottom:   var(--space-lg);
+}
+
+.pageTitle {
+  font-size:               var(--font-size-2xl);
+  font-weight:             800;
+  background:              var(--gradient-heading);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip:         text;
+  margin:                  0 0 var(--space-lg);
+}
+
+/* ── Sections ────────────────────────────────── */
+.section {
+  display:        flex;
+  flex-direction: column;
+  gap:            var(--space-md);
+  margin-bottom:  var(--space-xl);
+}
+
+.sectionTitle {
+  font-size:      var(--font-size-sm);
+  font-weight:    600;
+  color:          var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin:         0;
+}
+
+/* ── Scoreboard card ─────────────────────────── */
+.scoreboardCard {
+  background:    var(--color-surface);
+  border:        1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  padding:       var(--space-lg);
+  display:       grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap:           var(--space-lg);
+  align-items:   start;
+}
+
+/* ── Team column ─────────────────────────────── */
+.teamCol {
+  display:        flex;
+  flex-direction: column;
+  align-items:    center;
+  gap:            var(--space-sm);
+}
+
+/* ── Logo uploader ───────────────────────────── */
+.logoUploader {
+  display:        flex;
+  flex-direction: column;
+  align-items:    center;
+  gap:            4px;
+}
+
+.logoBtn {
+  position:      relative;
+  width:         72px;
+  height:        72px;
+  border-radius: 50%;
+  background:    var(--color-surface-2);
+  border:        2px dashed var(--color-border);
+  cursor:        pointer;
+  display:       flex;
+  align-items:   center;
+  justify-content: center;
+  overflow:      hidden;
+  transition:    border-color var(--transition);
+  padding:       0;
+}
+
+.logoBtn:hover {
+  border-color: var(--color-primary);
+}
+
+.logoBtn:hover .logoCameraIcon {
+  opacity: 1;
+}
+
+.logoImg {
+  width:      100%;
+  height:     100%;
+  object-fit: contain;
+  border-radius: 50%;
+}
+
+.logoPlaceholder {
+  font-size: 28px;
+  line-height: 1;
+}
+
+.logoCameraIcon {
+  position:   absolute;
+  bottom:     4px;
+  right:      4px;
+  font-size:  14px;
+  background: var(--color-surface);
+  border-radius: 50%;
+  width:      20px;
+  height:     20px;
+  display:    flex;
+  align-items: center;
+  justify-content: center;
+  opacity:    0;
+  transition: opacity var(--transition);
+}
+
+.logoLabel {
+  font-size:   var(--font-size-xs);
+  color:       var(--color-text-subtle);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* ── Team name input ─────────────────────────── */
+.teamNameInput {
+  width:         100%;
+  text-align:    center;
+  background:    var(--color-surface-2);
+  border:        1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding:       8px 10px;
+  font-size:     var(--font-size-sm);
+  font-weight:   700;
+  color:         var(--color-text);
+  outline:       none;
+  transition:    border-color var(--transition);
+  font-family:   var(--font-sans);
+  box-sizing:    border-box;
+}
+
+.teamNameInput:focus { border-color: var(--color-border-focus); }
+.teamNameInput::placeholder { color: var(--color-text-subtle); font-weight: 400; }
+
+/* ── Score field ─────────────────────────────── */
+.scoreField {
+  display:        flex;
+  flex-direction: column;
+  align-items:    center;
+  gap:            4px;
+  width:          100%;
+}
+
+.scoreLabel {
+  font-size:   var(--font-size-xs);
+  color:       var(--color-text-subtle);
+  font-weight: 500;
+}
+
+.scoreInput {
+  width:         80px;
+  text-align:    center;
+  background:    var(--color-surface-2);
+  border:        1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding:       10px 8px;
+  font-size:     var(--font-size-xl);
+  font-weight:   800;
+  color:         var(--color-text);
+  outline:       none;
+  font-family:   var(--font-sans);
+  transition:    border-color var(--transition);
+  -moz-appearance: textfield;
+}
+
+.scoreInput::-webkit-outer-spin-button,
+.scoreInput::-webkit-inner-spin-button { -webkit-appearance: none; }
+.scoreInput:focus { border-color: var(--color-border-focus); }
+
+/* ── VS divider ──────────────────────────────── */
+.vsDivider {
+  display:        flex;
+  flex-direction: column;
+  align-items:    center;
+  justify-content: center;
+  gap:            var(--space-md);
+  padding-top:    var(--space-lg);
+}
+
+.vsText {
+  font-size:   var(--font-size-md);
+  font-weight: 800;
+  color:       var(--color-text-subtle);
+  letter-spacing: 0.1em;
+}
+
+/* ── Outcome picker ──────────────────────────── */
+.outcomePicker {
+  display: flex;
+  flex-direction: column;
+  gap:     4px;
+}
+
+.outcomeBtn {
+  padding:       5px 14px;
+  border-radius: var(--radius-sm);
+  font-size:     var(--font-size-xs);
+  font-weight:   700;
+  cursor:        pointer;
+  border:        1px solid var(--color-border);
+  background:    var(--color-surface-2);
+  color:         var(--color-text-muted);
+  font-family:   var(--font-sans);
+  transition:    all var(--transition);
+  letter-spacing: 0.05em;
+}
+
+.outcomeBtn:hover { border-color: var(--color-primary); color: var(--color-text); }
+
+.outcome_win  { background: #166534; border-color: #22c55e; color: #86efac !important; }
+.outcome_loss { background: #7f1d1d; border-color: #ef4444; color: #fca5a5 !important; }
+.outcome_tie  { background: #1e3a5f; border-color: #60a5fa; color: #93c5fd !important; }
+
+/* ── Fields grid ─────────────────────────────── */
+.fieldsGrid {
+  display:               grid;
+  grid-template-columns: 1fr 1fr;
+  gap:                   var(--space-md);
+}
+
+@media (max-width: 480px) {
+  .fieldsGrid { grid-template-columns: 1fr; }
+  .scoreboardCard { grid-template-columns: 1fr; }
+  .vsDivider { flex-direction: row; }
+}
+
+/* ── Generic field ───────────────────────────── */
+.field {
+  display:        flex;
+  flex-direction: column;
+  gap:            var(--space-xs);
+}
+
+.label {
+  font-size:      var(--font-size-xs);
+  font-weight:    600;
+  color:          var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.input {
+  background:    var(--color-surface-2);
+  border:        1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding:       8px 12px;
+  color:         var(--color-text);
+  font-size:     var(--font-size-sm);
+  outline:       none;
+  font-family:   var(--font-sans);
+  transition:    border-color var(--transition);
+}
+
+.input:focus { border-color: var(--color-border-focus); }
+
+.textarea {
+  background:    var(--color-surface-2);
+  border:        1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding:       8px 12px;
+  color:         var(--color-text);
+  font-size:     var(--font-size-sm);
+  resize:        vertical;
+  outline:       none;
+  line-height:   1.6;
+  font-family:   var(--font-sans);
+  transition:    border-color var(--transition);
+}
+
+.textarea:focus        { border-color: var(--color-border-focus); }
+.textarea::placeholder { color: var(--color-text-subtle); }
+
+.inputError { border-color: var(--color-danger) !important; }
+
+.errorText {
+  color:     var(--color-danger);
+  font-size: var(--font-size-xs);
+  margin:    0;
+}
+
+/* ── Bottom actions ──────────────────────────── */
+.bottomActions { margin-top: var(--space-lg); }

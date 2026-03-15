@@ -1,13 +1,17 @@
+// src/main.jsx
 import React from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App";
 import { TripsProvider } from "./context/TripsContext";
+import { GamesProvider } from "./context/GamesContext";
 import "./styles/global.css";
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
     <TripsProvider>
-      <App />
+      <GamesProvider>
+        <App />
+      </GamesProvider>
     </TripsProvider>
   </React.StrictMode>
 );

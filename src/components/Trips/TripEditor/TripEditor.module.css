@@ -1,10 +1,13 @@
+/* src/components/trips/TripEditor/TripEditor.module.css */
+
+/* ── Editor shell ─────────────────────────────── */
 .editor {
   display:        flex;
   flex-direction: column;
-  gap:            var(--space-md);
+  gap:            var(--space-lg);
 }
 
-/* ── Name input ───────────────────────────────── */
+/* ── Trip Name ────────────────────────────────── */
 .nameRow {
   display:        flex;
   flex-direction: column;
@@ -12,42 +15,47 @@
 }
 
 .nameInput {
-  width:         100%;
-  background:    transparent;
-  border:        none;
-  border-bottom: 2px solid var(--color-border);
-  outline:       none;
-  font-size:     var(--font-size-2xl);
-  font-weight:   800;
+  background:    var(--color-surface-2);
+  border:        2px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding:       12px 16px;
+  font-size:     var(--font-size-xl);
+  font-weight:   700;
   color:         var(--color-text);
-  padding:       var(--space-xs) 0 var(--space-sm);
+  outline:       none;
   transition:    border-color var(--transition);
   font-family:   var(--font-sans);
+  width:         100%;
+  box-sizing:    border-box;
 }
 
-.nameInput:focus          { border-bottom-color: var(--color-primary); }
-.nameInput::placeholder   { color: var(--color-text-subtle); }
-.nameInputError           { border-bottom-color: var(--color-danger) !important; }
-.errorText                { color: var(--color-danger); font-size: var(--font-size-xs); }
+.nameInput:focus         { border-color: var(--color-border-focus); }
+.nameInput::placeholder  { color: var(--color-text-subtle); font-weight: 400; }
+.nameInputError          { border-color: var(--color-danger) !important; }
+
+.errorText {
+  color:     var(--color-danger);
+  font-size: var(--font-size-xs);
+  margin:    0;
+}
 
 /* ── Sections ─────────────────────────────────── */
 .section {
-  background:     var(--color-surface);
-  border-radius:  var(--radius-lg);
-  padding:        var(--space-lg);
   display:        flex;
   flex-direction: column;
   gap:            var(--space-md);
 }
 
 .sectionTitle {
-  font-size:   var(--font-size-md);
-  font-weight: 700;
-  color:       var(--color-text);
+  font-size:   var(--font-size-sm);
+  font-weight: 600;
+  color:       var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
   margin:      0;
 }
 
-/* ── Form fields ──────────────────────────────── */
+/* ── Generic fields ───────────────────────────── */
 .field {
   display:        flex;
   flex-direction: column;
@@ -55,11 +63,11 @@
 }
 
 .label {
-  font-size:      var(--font-size-xs);
-  font-weight:    600;
-  color:          var(--color-text-muted);
+  font-size:   var(--font-size-xs);
+  font-weight: 600;
+  color:       var(--color-text-muted);
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.04em;
 }
 
 .input {
@@ -113,39 +121,68 @@
 .destDot   { background: var(--color-danger); }
 .routeField { flex: 1; }
 
-/* Thin connector line between origin and first stop */
-.connectorLineOnly {
-  width:       2px;
-  height:      12px;
-  background:  var(--color-border);
-  margin-left: 6px;
-}
-
-/* Connector lines between stops */
+/* Connector lines */
 .connectorGroup {
   display:        flex;
   flex-direction: column;
 }
 
+/* ── Stop row (draggable) ─────────────────────── */
 .stopRow {
-  display: flex;
-  gap:     var(--space-sm);
+  display:    flex;
+  gap:        var(--space-sm);
+  cursor:     grab;
+  border-radius: var(--radius-md);
+  transition: background var(--transition), box-shadow var(--transition), opacity var(--transition);
+  padding:    2px 0;
 }
 
+.stopRow:active {
+  cursor: grabbing;
+}
+
+/* Visual feedback when this row is the active drag target */
+.dragOver {
+  background:  rgba(99, 102, 241, 0.08);
+  box-shadow:  0 0 0 2px var(--color-primary);
+  border-radius: var(--radius-md);
+}
+
+/* Ghost: semi-transparent while dragging */
+.dragging {
+  opacity: 0.4;
+}
+
+/* Left column: drag handle + connector lines + dot */
 .connectorLeft {
   display:        flex;
   flex-direction: column;
   align-items:    center;
   flex-shrink:    0;
-  width:          14px;
+  width:          20px;
   padding-top:    4px;
+  gap:            2px;
 }
 
 .connectorLine {
   width:      2px;
   flex:       1;
-  min-height: 12px;
+  min-height: 10px;
   background: var(--color-border);
+}
+
+.dragHandle {
+  font-size:   16px;
+  color:       var(--color-text-subtle);
+  line-height: 1;
+  cursor:      grab;
+  user-select: none;
+  padding:     2px 0;
+  transition:  color var(--transition);
+}
+
+.dragHandle:hover {
+  color: var(--color-primary);
 }
 
 .stopCardWrap {
@@ -153,19 +190,58 @@
   margin-bottom: var(--space-xs);
 }
 
-/* Add stop row */
+/* ── Insert-stop button (between stops) ─────────── */
+.insertStopRow {
+  display:        flex;
+  flex-direction: column;
+  align-items:    flex-start;        /* align to left gutter */
+  padding-left:   9px;               /* lines up with the connector */
+  gap:            0;
+}
+
+.connectorLineShort {
+  width:      2px;
+  height:     10px;
+  background: var(--color-border);
+}
+
+.insertStopBtn {
+  display:         flex;
+  align-items:     center;
+  justify-content: center;
+  width:           22px;
+  height:          22px;
+  border-radius:   50%;
+  border:          1px dashed var(--color-border);
+  background:      var(--color-surface-2);
+  color:           var(--color-text-subtle);
+  font-size:       14px;
+  line-height:     1;
+  cursor:          pointer;
+  transition:      border-color var(--transition), color var(--transition),
+                   background var(--transition), transform var(--transition);
+  padding:         0;
+}
+
+.insertStopBtn:hover {
+  border-color: var(--color-primary);
+  color:        var(--color-primary);
+  background:   rgba(99, 102, 241, 0.08);
+  transform:    scale(1.15);
+}
+
+.insertStopIcon {
+  line-height: 1;
+  font-weight: 400;
+}
+
+/* ── Add Stop button (appends to end) ──────────── */
 .addStopRow {
   display:        flex;
   flex-direction: column;
   align-items:    center;
   gap:            0;
-  margin-left:    6px;
-}
-
-.connectorLineShort {
-  width:      2px;
-  height:     12px;
-  background: var(--color-border);
+  margin-left:    0;
 }
 
 .addStopBtn {
@@ -215,8 +291,8 @@
 }
 
 .travelModeBtns {
-  display:  flex;
-  gap:      var(--space-xs);
+  display:   flex;
+  gap:       var(--space-xs);
   flex-wrap: wrap;
 }
 
@@ -229,4 +305,16 @@
   border:        1px solid;
   transition:    all var(--transition);
   font-family:   var(--font-sans);
+  color:         var(--color-text-muted);
+  background:    var(--color-surface);
+  border-color:  var(--color-border);
+}
+
+.travelModeBtn:hover {
+  border-color: var(--color-primary);
+  color:        var(--color-text);
+}
+
+.travelModeBtnActive {
+  color: #fff !important;
 }
