@@ -1,4 +1,4 @@
-// src/context/GamesContext.jsx
+// src/context/GamesContext.jsx  (updated — adds app:datasaved dispatch)
 import { createContext, useContext, useState, useEffect, useCallback } from "react";
 import { generateId } from "@/utils/imageHelpers";
 
@@ -8,9 +8,7 @@ function loadGames() {
   try {
     const raw = localStorage.getItem(GAMES_STORAGE_KEY);
     return raw ? JSON.parse(raw) : [];
-  } catch {
-    return [];
-  }
+  } catch { return []; }
 }
 
 function saveGames(games) {
@@ -24,6 +22,10 @@ function saveGames(games) {
   }
 }
 
+function notifyDataSaved() {
+  window.dispatchEvent(new CustomEvent("app:datasaved"));
+}
+
 const GamesContext = createContext(null);
 
 export function GamesProvider({ children }) {
@@ -32,13 +34,9 @@ export function GamesProvider({ children }) {
   const [error,   setError]   = useState(null);
 
   useEffect(() => {
-    try {
-      setGames(loadGames());
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
+    try { setGames(loadGames()); }
+    catch (err) { setError(err.message); }
+    finally { setLoading(false); }
   }, []);
 
   const addGame = useCallback((gameData) => {
@@ -46,6 +44,7 @@ export function GamesProvider({ children }) {
     setGames(prev => {
       const updated = [...prev, game];
       saveGames(updated);
+      notifyDataSaved();
       return updated;
     });
     return game;
@@ -56,6 +55,7 @@ export function GamesProvider({ children }) {
     setGames(prev => {
       const updated = prev.map(g => g.id === updatedGame.id ? { ...g, ...updatedGame } : g);
       saveGames(updated);
+      notifyDataSaved();
       return updated;
     });
   }, []);
@@ -64,6 +64,7 @@ export function GamesProvider({ children }) {
     setGames(prev => {
       const updated = prev.filter(g => g.id !== id);
       saveGames(updated);
+      notifyDataSaved();
       return updated;
     });
   }, []);

@@ -1,0 +1,459 @@
+/* src/components/BackupSettingsModal/BackupSettingsModal.module.css */
+
+/* ── Overlay ─────────────────────────────────── */
+.overlay {
+  position:        fixed;
+  inset:           0;
+  background:      rgba(0, 0, 0, 0.6);
+  display:         flex;
+  align-items:     center;
+  justify-content: center;
+  z-index:         1000;
+  padding:         var(--space-md);
+  backdrop-filter: blur(2px);
+}
+
+/* ── Modal shell ─────────────────────────────── */
+.modal {
+  background:    var(--color-surface);
+  border:        1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  width:         100%;
+  max-width:     480px;
+  max-height:    90vh;
+  display:       flex;
+  flex-direction: column;
+  overflow:      hidden;
+  box-shadow:    var(--shadow-lg);
+}
+
+/* ── Header ─────────────────────────────────── */
+.header {
+  display:         flex;
+  align-items:     center;
+  justify-content: space-between;
+  padding:         var(--space-lg);
+  border-bottom:   1px solid var(--color-border);
+  flex-shrink:     0;
+}
+
+.headerLeft {
+  display:     flex;
+  align-items: center;
+  gap:         var(--space-md);
+}
+
+.headerIcon { font-size: 24px; line-height: 1; }
+
+.headerTitle {
+  font-size:   var(--font-size-lg);
+  font-weight: 700;
+  color:       var(--color-text);
+  margin:      0;
+}
+
+.headerSub {
+  font-size: var(--font-size-xs);
+  color:     var(--color-text-subtle);
+  margin:    2px 0 0;
+}
+
+.closeBtn {
+  background:    none;
+  border:        none;
+  color:         var(--color-text-muted);
+  font-size:     16px;
+  cursor:        pointer;
+  padding:       6px 8px;
+  border-radius: var(--radius-sm);
+  font-family:   var(--font-sans);
+  transition:    color var(--transition), background var(--transition);
+}
+
+.closeBtn:hover { color: var(--color-text); background: var(--color-surface-2); }
+
+/* ── Tabs ────────────────────────────────────── */
+.tabs {
+  display:       flex;
+  border-bottom: 1px solid var(--color-border);
+  background:    var(--color-surface-2);
+  flex-shrink:   0;
+}
+
+.tab {
+  flex:            1;
+  display:         flex;
+  align-items:     center;
+  justify-content: center;
+  gap:             6px;
+  padding:         12px var(--space-md);
+  font-size:       var(--font-size-sm);
+  font-weight:     600;
+  color:           var(--color-text-muted);
+  background:      none;
+  border:          none;
+  border-bottom:   2px solid transparent;
+  cursor:          pointer;
+  font-family:     var(--font-sans);
+  transition:      color var(--transition), border-color var(--transition);
+}
+
+.tab:hover { color: var(--color-text); }
+
+.tabActive {
+  color:        var(--color-text) !important;
+  border-color: var(--color-primary);
+}
+
+/* ── Body ────────────────────────────────────── */
+.body {
+  flex:       1;
+  overflow-y: auto;
+  padding:    var(--space-lg);
+}
+
+/* ── Google Drive panel ─────────────────────── */
+.drivePanel {
+  display:        flex;
+  flex-direction: column;
+  gap:            var(--space-md);
+}
+
+.driveLogo {
+  display:    flex;
+  justify-content: center;
+  margin-bottom: var(--space-sm);
+}
+
+.driveTitle {
+  font-size:   var(--font-size-lg);
+  font-weight: 700;
+  color:       var(--color-text);
+  margin:      0;
+  text-align:  center;
+}
+
+.driveDesc {
+  font-size:   var(--font-size-sm);
+  color:       var(--color-text-muted);
+  line-height: 1.6;
+  margin:      0;
+  text-align:  center;
+}
+
+/* ── Permission box ─────────────────────────── */
+.permissionBox {
+  background:    var(--color-surface-2);
+  border:        1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding:       var(--space-md);
+}
+
+.permissionTitle {
+  font-size:   var(--font-size-xs);
+  font-weight: 600;
+  color:       var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin:      0 0 6px;
+}
+
+.permissionList {
+  list-style: none;
+  padding:    0;
+  margin:     0;
+  display:    flex;
+  flex-direction: column;
+  gap:        4px;
+}
+
+.permissionList li {
+  font-size:   var(--font-size-sm);
+  color:       var(--color-text-muted);
+}
+
+/* ── Warning box ─────────────────────────────── */
+.warningBox {
+  background:    rgba(245, 158, 11, 0.1);
+  border:        1px solid rgba(245, 158, 11, 0.4);
+  border-radius: var(--radius-md);
+  padding:       var(--space-sm) var(--space-md);
+  font-size:     var(--font-size-xs);
+  color:         var(--color-warning);
+  line-height:   1.6;
+}
+
+/* ── Google sign-in button ──────────────────── */
+.googleBtn {
+  display:         flex;
+  align-items:     center;
+  justify-content: center;
+  gap:             var(--space-sm);
+  width:           100%;
+  padding:         12px var(--space-md);
+  background:      #fff;
+  border:          1px solid #dadce0;
+  border-radius:   var(--radius-md);
+  font-size:       var(--font-size-sm);
+  font-weight:     600;
+  color:           #3c4043;
+  cursor:          pointer;
+  font-family:     var(--font-sans);
+  transition:      box-shadow var(--transition), background var(--transition);
+}
+
+.googleBtn:hover:not(:disabled) { box-shadow: 0 1px 6px rgba(0,0,0,0.2); }
+.googleBtn:disabled              { opacity: 0.5; cursor: not-allowed; }
+
+/* ── Connected header ───────────────────────── */
+.connectedHeader {
+  display:         flex;
+  align-items:     center;
+  justify-content: space-between;
+  background:      var(--color-surface-2);
+  border:          1px solid var(--color-border);
+  border-radius:   var(--radius-md);
+  padding:         var(--space-md);
+}
+
+.connectedLeft {
+  display:     flex;
+  align-items: center;
+  gap:         var(--space-sm);
+}
+
+.connectedLabel {
+  font-size:   var(--font-size-sm);
+  font-weight: 600;
+  color:       var(--color-text);
+  margin:      0;
+}
+
+.connectedEmail {
+  font-size: var(--font-size-xs);
+  color:     var(--color-text-subtle);
+  margin:    2px 0 0;
+}
+
+.disconnectBtn {
+  background:    none;
+  border:        1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding:       5px 12px;
+  font-size:     var(--font-size-xs);
+  color:         var(--color-text-muted);
+  cursor:        pointer;
+  font-family:   var(--font-sans);
+  transition:    border-color var(--transition), color var(--transition);
+}
+
+.disconnectBtn:hover { border-color: var(--color-danger); color: var(--color-danger); }
+
+/* ── Status dot ─────────────────────────────── */
+.dot {
+  width:         10px;
+  height:        10px;
+  border-radius: 50%;
+  flex-shrink:   0;
+}
+
+.dotGreen { background: var(--color-success); box-shadow: 0 0 0 3px rgba(34,197,94,0.2); }
+.dotAmber { background: var(--color-warning); box-shadow: 0 0 0 3px rgba(245,158,11,0.2); animation: pulse 1.5s ease infinite; }
+.dotRed   { background: var(--color-danger); }
+.dotGray  { background: var(--color-border); }
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.4; }
+}
+
+/* ── Sync info row ──────────────────────────── */
+.syncRow {
+  display:         flex;
+  justify-content: space-between;
+  align-items:     center;
+  font-size:       var(--font-size-xs);
+  color:           var(--color-text-muted);
+  padding:         var(--space-xs) 0;
+}
+
+.syncLabel { color: var(--color-text-subtle); }
+.syncValue { font-weight: 600; }
+
+/* ── Action buttons ─────────────────────────── */
+.actionRow {
+  display:        flex;
+  flex-direction: column;
+  gap:            var(--space-sm);
+}
+
+.actionBtn {
+  width:         100%;
+  padding:       11px var(--space-md);
+  border-radius: var(--radius-md);
+  font-size:     var(--font-size-sm);
+  font-weight:   600;
+  cursor:        pointer;
+  font-family:   var(--font-sans);
+  transition:    all var(--transition);
+  text-align:    center;
+}
+
+.actionBtn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.actionBtnPrimary {
+  background: var(--gradient-primary);
+  color:      #fff;
+  border:     none;
+}
+.actionBtnPrimary:not(:disabled):hover { background: var(--color-primary-dark); }
+
+.actionBtnSecondary {
+  background: var(--color-surface-2);
+  color:      var(--color-text-muted);
+  border:     1px solid var(--color-border);
+}
+.actionBtnSecondary:not(:disabled):hover { border-color: var(--color-primary); color: var(--color-text); }
+
+.actionBtnDanger {
+  background: transparent;
+  color:      var(--color-danger);
+  border:     1px solid var(--color-danger-dark);
+}
+.actionBtnDanger:not(:disabled):hover { background: var(--color-danger); color: #fff; }
+
+/* ── Confirm box ─────────────────────────────── */
+.confirmBox {
+  background:    rgba(239,68,68,0.08);
+  border:        1px solid var(--color-danger-dark);
+  border-radius: var(--radius-md);
+  padding:       var(--space-md);
+  display:       flex;
+  flex-direction: column;
+  gap:           var(--space-sm);
+}
+
+.confirmMsg {
+  font-size: var(--font-size-sm);
+  color:     var(--color-text-muted);
+  margin:    0;
+}
+
+.confirmBtns {
+  display: flex;
+  gap:     var(--space-sm);
+}
+
+/* ── Error message ──────────────────────────── */
+.errorMsg {
+  background:    rgba(239,68,68,0.1);
+  border:        1px solid var(--color-danger-dark);
+  border-radius: var(--radius-md);
+  padding:       var(--space-sm) var(--space-md);
+  font-size:     var(--font-size-sm);
+  color:         var(--color-danger);
+  margin:        0;
+}
+
+/* ── Auto sync note ─────────────────────────── */
+.autoSyncNote {
+  font-size:   var(--font-size-xs);
+  color:       var(--color-text-subtle);
+  margin:      0;
+  line-height: 1.6;
+}
+
+/* ── Local panel ─────────────────────────────── */
+.localPanel {
+  display:        flex;
+  flex-direction: column;
+  gap:            var(--space-md);
+}
+
+.localDesc {
+  font-size:   var(--font-size-sm);
+  color:       var(--color-text-muted);
+  line-height: 1.6;
+  margin:      0;
+}
+
+/* ── Summary chips ───────────────────────────── */
+.summaryRow {
+  display:   flex;
+  gap:       var(--space-sm);
+  flex-wrap: wrap;
+}
+
+.summaryChip {
+  flex:            1;
+  min-width:       60px;
+  display:         flex;
+  flex-direction:  column;
+  align-items:     center;
+  background:      var(--color-surface-2);
+  border:          1px solid var(--color-border);
+  border-radius:   var(--radius-md);
+  padding:         var(--space-sm) var(--space-xs);
+  gap:             2px;
+}
+
+.summaryNum {
+  font-size:   var(--font-size-lg);
+  font-weight: 800;
+  color:       var(--color-primary-light);
+}
+
+.summaryLbl {
+  font-size:   var(--font-size-xs);
+  color:       var(--color-text-subtle);
+}
+
+/* ── Success card ────────────────────────────── */
+.successCard {
+  display:        flex;
+  flex-direction: column;
+  align-items:    center;
+  gap:            var(--space-md);
+  padding:        var(--space-lg) 0;
+  text-align:     center;
+}
+
+.successIcon {
+  width:           52px;
+  height:          52px;
+  border-radius:   50%;
+  background:      rgba(34,197,94,0.15);
+  border:          2px solid var(--color-success);
+  color:           var(--color-success);
+  font-size:       24px;
+  display:         flex;
+  align-items:     center;
+  justify-content: center;
+}
+
+.successTitle {
+  font-size:   var(--font-size-lg);
+  font-weight: 700;
+  color:       var(--color-text);
+  margin:      0;
+}
+
+.successDesc {
+  font-size:   var(--font-size-sm);
+  color:       var(--color-text-muted);
+  line-height: 1.6;
+  max-width:   360px;
+  margin:      0;
+}
+
+.refreshBtn {
+  padding:       10px 24px;
+  background:    var(--gradient-primary);
+  color:         #fff;
+  border:        none;
+  border-radius: var(--radius-md);
+  font-size:     var(--font-size-sm);
+  font-weight:   600;
+  cursor:        pointer;
+  font-family:   var(--font-sans);
+}

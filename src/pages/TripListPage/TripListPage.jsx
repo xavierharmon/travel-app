@@ -7,6 +7,8 @@ import { computeTripMileage } from "@/utils/tripMileage";
 import TripCard from "@/components/trips/TripCard";
 import Button from "@/components/common/Button";
 import { useState, useEffect, useMemo } from "react";
+import BackupSettingsModal from "@/components/BackupSettingsModal";
+
 
 const SORT_OPTIONS = [
   { value: "date-newest", label: "Newest" },
@@ -64,7 +66,7 @@ export default function TripListPage({
   onViewGames,
 }) {
   const { trips, loading, error, deleteTrip } = useTrips();
-
+  const [showBackup, setShowBackup] = useState(false);
   const [sortBy,       setSortBy]       = useState("date-newest");
   const [storageUsage, setStorageUsage] = useState(null);
   const [cacheStats,   setCacheStats]   = useState(null);
@@ -121,6 +123,9 @@ export default function TripListPage({
 
 
         <div style={{ display: "flex", gap: "var(--space-sm)" }}>
+          <Button variant="secondary" onClick={() => setShowBackup(true)} size="md">
+            🗄️ Backup
+          </Button>
           <Button variant="secondary" onClick={onViewGames} size="md">
             🏆 Sports Tracker
           </Button>
@@ -251,7 +256,10 @@ export default function TripListPage({
           </div>
         )}
       </footer>
-
+      {showBackup && (
+        <BackupSettingsModal onClose={() => setShowBackup(false)} />
+      )}
     </div>
+
   );
 }
