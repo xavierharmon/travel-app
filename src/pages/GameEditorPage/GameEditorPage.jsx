@@ -200,7 +200,7 @@ export default function GameEditorPage({ game, onBack }) {
               />
               <datalist id="sports-list">
                 {["Baseball", "Hockey", "College", "Basketball",
-                  "Football", "Soccer", "Tennis"].map(s => (
+                  "Football", "Soccer", "Tennis", "MiLB"].map(s => (
                   <option key={s} value={s} />
                 ))}
               </datalist>

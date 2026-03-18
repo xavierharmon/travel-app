@@ -374,7 +374,7 @@ const NCAA_TEAMS = [
 // ── Exports ──────────────────────────────────────────────────────
 export const TEAMS_BY_SPORT = {
   Baseball:      MLB_TEAMS,
-  "Minor League": MILB_TEAMS,
+  MiLB:          MILB_TEAMS,
   Hockey:        NHL_TEAMS,
   College:       NCAA_TEAMS,
 };
