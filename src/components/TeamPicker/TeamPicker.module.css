@@ -225,3 +225,17 @@
   margin:      0;
   line-height: 1.5;
 }
+
+.logoEmbedding { opacity: 0.5; }
+
+.embeddingSpinner {
+  position:       absolute;
+  inset:          0;
+  border-radius:  var(--radius-sm);
+  border:         2px solid transparent;
+  border-top-color: var(--color-primary);
+  animation:      spin 0.7s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
