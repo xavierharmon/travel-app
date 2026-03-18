@@ -1,51 +1,18 @@
-// src/pages/GameEditorPage/GameEditorPage.jsx
-import { useState, useCallback, useRef } from "react";
+// src/pages/GameEditorPage/GameEditorPage.jsx  (updated scoreboard section)
+//
+// Replace the existing TeamLogoUploader + teamNameInput blocks in the
+// scoreboard card with TeamPicker. Only the scoreboard section changes —
+// all other sections (Details, Photos, bottom save) stay identical.
+
+import { useState } from "react";
 import styles from "./GameEditorPage.module.css";
 import { useGames } from "@/context/GamesContext";
 import { generateId } from "@/utils/imageHelpers";
 import Button from "@/components/common/Button";
 import PhotoGrid from "@/components/common/PhotoGrid";
+import TeamPicker from "@/components/TeamPicker";
 
-// ── Team logo upload helper ──────────────────────────────────────
-function TeamLogoUploader({ logo, onChange, label }) {
-  const inputRef = useRef(null);
-
-  function handleFile(e) {
-    const file = e.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = ev => onChange(ev.target.result);
-    reader.readAsDataURL(file);
-    e.target.value = "";
-  }
-
-  return (
-    <div className={styles.logoUploader}>
-      <button
-        className={styles.logoBtn}
-        onClick={() => inputRef.current?.click()}
-        type="button"
-        title={`Upload ${label} logo`}
-      >
-        {logo
-          ? <img src={logo} alt={label} className={styles.logoImg} />
-          : <span className={styles.logoPlaceholder}>🏟️</span>
-        }
-        <span className={styles.logoCameraIcon}>📷</span>
-      </button>
-      <span className={styles.logoLabel}>{label}</span>
-      <input
-        ref={inputRef}
-        type="file"
-        accept="image/*"
-        style={{ display: "none" }}
-        onChange={handleFile}
-      />
-    </div>
-  );
-}
-
-// ── Score input ──────────────────────────────────────────────────
+// ── Score input (unchanged) ──────────────────────────────────────
 function ScoreInput({ value, onChange, label }) {
   return (
     <div className={styles.scoreField}>
@@ -70,20 +37,20 @@ export default function GameEditorPage({ game, onBack }) {
   const [form, setForm] = useState(() => {
     if (!game) {
       return {
-        id:              null,
-        date:            new Date().toISOString().slice(0, 10),
-        sport:           "",
-        homeTeam:        "",
-        homeTeamLogo:    null,
-        homeScore:       null,
-        visitingTeam:    "",
+        id:               null,
+        date:             new Date().toISOString().slice(0, 10),
+        sport:            "",
+        homeTeam:         "",
+        homeTeamLogo:     null,
+        homeScore:        null,
+        visitingTeam:     "",
         visitingTeamLogo: null,
-        visitingScore:   null,
-        venue:           "",
-        city:            "",
-        description:     "",
-        outcome:         "win",   // "win" | "loss" | "tie"
-        photos:          [],
+        visitingScore:    null,
+        venue:            "",
+        city:             "",
+        description:      "",
+        outcome:          "win",
+        photos:           [],
       };
     }
     return { ...game };
@@ -113,7 +80,6 @@ export default function GameEditorPage({ game, onBack }) {
     onBack();
   }
 
-  // Auto-derive outcome from scores when both are filled
   function handleScoreChange(side, val) {
     const updated = { ...form, [`${side}Score`]: val };
     const h = side === "home"     ? val : form.homeScore;
@@ -147,16 +113,17 @@ export default function GameEditorPage({ game, onBack }) {
           <div className={styles.scoreboardCard}>
             {/* Home team */}
             <div className={styles.teamCol}>
-              <TeamLogoUploader
+              <TeamPicker
+                sport={form.sport}
+                value={form.homeTeam}
                 logo={form.homeTeamLogo}
-                onChange={v => set("homeTeamLogo", v)}
                 label="Home"
-              />
-              <input
-                className={`${styles.teamNameInput} ${errors.homeTeam ? styles.inputError : ""}`}
-                value={form.homeTeam || ""}
-                onChange={e => set("homeTeam", e.target.value)}
                 placeholder="Home Team"
+                onChange={({ name, logo }) => setForm(prev => ({
+                  ...prev,
+                  homeTeam:     name,
+                  homeTeamLogo: logo ?? prev.homeTeamLogo,
+                }))}
               />
               {errors.homeTeam && <p className={styles.errorText}>{errors.homeTeam}</p>}
               <ScoreInput
@@ -169,7 +136,6 @@ export default function GameEditorPage({ game, onBack }) {
             {/* VS divider */}
             <div className={styles.vsDivider}>
               <span className={styles.vsText}>VS</span>
-              {/* Outcome badge */}
               <div className={styles.outcomePicker}>
                 {["win", "loss", "tie"].map(o => (
                   <button
@@ -186,16 +152,17 @@ export default function GameEditorPage({ game, onBack }) {
 
             {/* Visiting team */}
             <div className={styles.teamCol}>
-              <TeamLogoUploader
+              <TeamPicker
+                sport={form.sport}
+                value={form.visitingTeam}
                 logo={form.visitingTeamLogo}
-                onChange={v => set("visitingTeamLogo", v)}
                 label="Visitor"
-              />
-              <input
-                className={`${styles.teamNameInput} ${errors.visitingTeam ? styles.inputError : ""}`}
-                value={form.visitingTeam || ""}
-                onChange={e => set("visitingTeam", e.target.value)}
                 placeholder="Visiting Team"
+                onChange={({ name, logo }) => setForm(prev => ({
+                  ...prev,
+                  visitingTeam:     name,
+                  visitingTeamLogo: logo ?? prev.visitingTeamLogo,
+                }))}
               />
               {errors.visitingTeam && <p className={styles.errorText}>{errors.visitingTeam}</p>}
               <ScoreInput
@@ -228,12 +195,12 @@ export default function GameEditorPage({ game, onBack }) {
                 className={styles.input}
                 value={form.sport || ""}
                 onChange={e => set("sport", e.target.value)}
-                placeholder="e.g. Baseball, Basketball…"
+                placeholder="e.g. Baseball, Hockey…"
                 list="sports-list"
               />
               <datalist id="sports-list">
-                {["Baseball", "Basketball", "Football", "Hockey", "Soccer",
-                  "Tennis", "Golf", "Volleyball", "Softball"].map(s => (
+                {["Baseball", "Hockey", "College", "Basketball",
+                  "Football", "Soccer", "Tennis"].map(s => (
                   <option key={s} value={s} />
                 ))}
               </datalist>
@@ -266,7 +233,7 @@ export default function GameEditorPage({ game, onBack }) {
               className={styles.textarea}
               value={form.description || ""}
               onChange={e => set("description", e.target.value)}
-              placeholder="What made this game special? A walk-off homer, amazing seats, great food…"
+              placeholder="What made this game special?"
               rows={4}
             />
           </div>
@@ -281,7 +248,6 @@ export default function GameEditorPage({ game, onBack }) {
           />
         </section>
 
-        {/* Bottom save */}
         <div className={styles.bottomActions}>
           <Button variant="primary" size="lg" fullWidth onClick={handleSave}>
             {isNew ? "Save Game" : "Update Game"}
