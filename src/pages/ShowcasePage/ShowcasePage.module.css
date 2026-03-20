@@ -1,0 +1,230 @@
+/* src/pages/ShowcasePage/ShowcasePage.module.css */
+
+/* ── Root page ───────────────────────────────── */
+.page {
+  position:   fixed;
+  inset:      0;
+  background: #000;
+  overflow:   hidden;
+  cursor:     none; /* hide cursor by default; controls bring it back */
+}
+
+/* ── Item container ──────────────────────────── */
+.itemWrap {
+  position:   absolute;
+  inset:      0;
+  transition: opacity 0.8s ease;
+  opacity:    1;
+}
+
+.itemFading {
+  opacity: 0;
+}
+
+/* ── Progress bar ────────────────────────────── */
+.progressTrack {
+  position:   absolute;
+  top:        0;
+  left:       0;
+  right:      0;
+  height:     3px;
+  background: rgba(255, 255, 255, 0.15);
+  z-index:    100;
+}
+
+.progressBar {
+  height:           100%;
+  background:       linear-gradient(90deg, var(--color-primary), var(--color-primary-light));
+  width:            100%;
+  transform-origin: left center;
+  animation:        progressShrink linear forwards;
+  box-shadow:       0 0 8px rgba(99, 102, 241, 0.6);
+}
+
+@keyframes progressShrink {
+  from { transform: scaleX(1); }
+  to   { transform: scaleX(0); }
+}
+
+/* ── Controls overlay ────────────────────────── */
+.controls {
+  position:   absolute;
+  inset:      0;
+  z-index:    50;
+  display:    flex;
+  flex-direction: column;
+  justify-content: space-between;
+  pointer-events: none; /* children opt-in individually */
+  opacity:    0;
+  transition: opacity 0.4s ease;
+  cursor:     default;
+}
+
+.controlsVisible {
+  opacity: 1;
+}
+
+/* ── Top bar ─────────────────────────────────── */
+.topBar {
+  display:         flex;
+  align-items:     center;
+  justify-content: space-between;
+  padding:         var(--space-lg) var(--space-xl);
+  background:      linear-gradient(to bottom, rgba(0,0,0,0.65), transparent);
+  pointer-events:  auto;
+}
+
+.topLeft {
+  display:     flex;
+  align-items: center;
+  gap:         var(--space-sm);
+}
+
+.showcaseLabel {
+  font-size:      var(--font-size-sm);
+  font-weight:    700;
+  color:          rgba(255, 255, 255, 0.7);
+  letter-spacing: 0.05em;
+}
+
+.exitBtn {
+  width:           40px;
+  height:          40px;
+  border-radius:   50%;
+  background:      rgba(255, 255, 255, 0.12);
+  border:          1px solid rgba(255, 255, 255, 0.2);
+  color:           rgba(255, 255, 255, 0.8);
+  font-size:       18px;
+  display:         flex;
+  align-items:     center;
+  justify-content: center;
+  cursor:          pointer;
+  transition:      background var(--transition), color var(--transition);
+  font-family:     var(--font-sans);
+  line-height:     1;
+}
+
+.exitBtn:hover {
+  background: rgba(255, 255, 255, 0.22);
+  color:      #fff;
+}
+
+/* ── Bottom bar ──────────────────────────────── */
+.bottomBar {
+  display:         flex;
+  align-items:     center;
+  justify-content: center;
+  flex-direction:  column;
+  gap:             var(--space-sm);
+  padding:         var(--space-lg) var(--space-xl) var(--space-xl);
+  background:      linear-gradient(to top, rgba(0,0,0,0.65), transparent);
+  pointer-events:  auto;
+}
+
+/* ── Nav buttons ─────────────────────────────── */
+.navGroup {
+  display:     flex;
+  align-items: center;
+  gap:         var(--space-md);
+}
+
+.navBtn {
+  width:           52px;
+  height:          52px;
+  border-radius:   50%;
+  background:      rgba(255, 255, 255, 0.12);
+  border:          1px solid rgba(255, 255, 255, 0.2);
+  color:           rgba(255, 255, 255, 0.85);
+  font-size:       26px;
+  display:         flex;
+  align-items:     center;
+  justify-content: center;
+  cursor:          pointer;
+  transition:      background var(--transition), transform var(--transition-fast);
+  font-family:     var(--font-sans);
+  line-height:     1;
+}
+
+.navBtn:hover {
+  background: rgba(255, 255, 255, 0.22);
+  transform:  scale(1.08);
+}
+
+.navBtn:active {
+  transform: scale(0.95);
+}
+
+.pauseBtn {
+  width:      64px;
+  height:     64px;
+  font-size:  22px;
+  background: rgba(99, 102, 241, 0.3);
+  border-color: rgba(99, 102, 241, 0.5);
+}
+
+.pauseBtn:hover {
+  background: rgba(99, 102, 241, 0.5);
+}
+
+/* ── Counter ─────────────────────────────────── */
+.counter {
+  font-size:   var(--font-size-xs);
+  color:       rgba(255, 255, 255, 0.45);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+}
+
+.pausedLabel {
+  color: var(--color-warning);
+}
+
+/* ── Empty state ─────────────────────────────── */
+.emptyPage {
+  position:        fixed;
+  inset:           0;
+  background:      var(--color-bg);
+  display:         flex;
+  align-items:     center;
+  justify-content: center;
+}
+
+.emptyContent {
+  display:        flex;
+  flex-direction: column;
+  align-items:    center;
+  gap:            var(--space-md);
+  text-align:     center;
+  padding:        var(--space-2xl);
+}
+
+.emptyIcon {
+  font-size:   64px;
+  line-height: 1;
+}
+
+.emptyTitle {
+  font-size:   var(--font-size-2xl);
+  font-weight: 800;
+  color:       var(--color-text);
+  margin:      0;
+}
+
+.emptyDesc {
+  font-size: var(--font-size-md);
+  color:     var(--color-text-muted);
+  margin:    0;
+  max-width: 360px;
+}
+
+.emptyBack {
+  margin-top:    var(--space-md);
+  padding:       10px 24px;
+  background:    var(--gradient-primary);
+  color:         #fff;
+  border:        none;
+  border-radius: var(--radius-md);
+  font-size:     var(--font-size-sm);
+  font-weight:   600;
+  cursor:        pointer;
+  font-family:   var(--font-sans);
+}

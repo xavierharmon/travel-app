@@ -1,4 +1,4 @@
-// src/App.jsx  (updated — adds AutoSyncProvider)
+// src/App.jsx
 import { useState } from "react";
 import { VIEWS } from "@/constants";
 import TripListPage    from "@/pages/TripListPage";
@@ -7,6 +7,7 @@ import MapPage         from "@/pages/MapPage";
 import HistoryMapPage  from "@/pages/HistoryMapPage";
 import GamesListPage   from "@/pages/GamesListPage";
 import GameEditorPage  from "@/pages/GameEditorPage";
+import ShowcasePage    from "@/pages/ShowcasePage";
 import AutoSyncProvider from "@/components/AutoSyncProvider";
 
 export default function App() {
@@ -14,10 +15,11 @@ export default function App() {
   const [selectedTrip, setSelectedTrip] = useState(null);
   const [selectedGame, setSelectedGame] = useState(null);
 
-  function openEditor(trip = null) { setSelectedTrip(trip); setView(VIEWS.EDIT); }
-  function openMap(trip)           { setSelectedTrip(trip); setView(VIEWS.MAP); }
-  function openGames()             { setView(VIEWS.GAMES); }
-  function openGameEditor(game = null) { setSelectedGame(game); setView(VIEWS.GAME_EDIT); }
+  function openEditor(trip = null)         { setSelectedTrip(trip); setView(VIEWS.EDIT); }
+  function openMap(trip)                   { setSelectedTrip(trip); setView(VIEWS.MAP); }
+  function openGames()                     { setView(VIEWS.GAMES); }
+  function openGameEditor(game = null)     { setSelectedGame(game); setView(VIEWS.GAME_EDIT); }
+  function openShowcase()                  { setView(VIEWS.SHOWCASE); }
 
   function goToList() {
     setSelectedTrip(null);
@@ -45,6 +47,9 @@ export default function App() {
       {view === VIEWS.GAME_EDIT && (
         <GameEditorPage game={selectedGame} onBack={openGames} />
       )}
+      {view === VIEWS.SHOWCASE && (
+        <ShowcasePage onBack={goToList} />
+      )}
       {view === VIEWS.LIST && (
         <TripListPage
           onNewTrip={() => openEditor(null)}
@@ -52,6 +57,7 @@ export default function App() {
           onViewMap={openMap}
           onViewHistory={() => setView(VIEWS.HISTORY)}
           onViewGames={openGames}
+          onViewShowcase={openShowcase}
         />
       )}
     </>

@@ -1,0 +1,152 @@
+/* src/components/Showcase/TripFallbackCard/TripFallbackCard.module.css */
+
+.card {
+  position:        relative;
+  width:           100%;
+  height:          100%;
+  display:         flex;
+  align-items:     center;
+  justify-content: center;
+  overflow:        hidden;
+}
+
+/* ── Decorative concentric rings ────────────── */
+.ring1,
+.ring2,
+.ring3 {
+  position:      absolute;
+  border-radius: 50%;
+  border:        1px solid rgba(99, 102, 241, 0.15);
+  pointer-events: none;
+  animation:     ringPulse 4s ease-in-out infinite;
+}
+
+.ring1 {
+  width:  500px;
+  height: 500px;
+  animation-delay: 0s;
+}
+
+.ring2 {
+  width:  720px;
+  height: 720px;
+  border-color: rgba(99, 102, 241, 0.1);
+  animation-delay: 0.8s;
+}
+
+.ring3 {
+  width:  940px;
+  height: 940px;
+  border-color: rgba(99, 102, 241, 0.05);
+  animation-delay: 1.6s;
+}
+
+@keyframes ringPulse {
+  0%, 100% { transform: scale(1);    opacity: 1; }
+  50%       { transform: scale(1.03); opacity: 0.6; }
+}
+
+/* ── Content ─────────────────────────────────── */
+.content {
+  position:        relative;
+  z-index:         2;
+  display:         flex;
+  flex-direction:  column;
+  align-items:     center;
+  gap:             20px;
+  text-align:      center;
+  padding:         var(--space-2xl);
+  max-width:       680px;
+}
+
+/* ── Icon ────────────────────────────────────── */
+.iconWrap {
+  width:           80px;
+  height:          80px;
+  border-radius:   50%;
+  background:      rgba(99, 102, 241, 0.12);
+  border:          1px solid rgba(99, 102, 241, 0.3);
+  display:         flex;
+  align-items:     center;
+  justify-content: center;
+  margin-bottom:   var(--space-sm);
+}
+
+.icon {
+  font-size: 36px;
+  line-height: 1;
+}
+
+/* ── Trip name ────────────────────────────────── */
+.tripName {
+  font-size:               clamp(2rem, 5vw, 4rem);
+  font-weight:             900;
+  background:              var(--gradient-heading);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip:         text;
+  margin:                  0;
+  line-height:             1.1;
+  letter-spacing:          -0.02em;
+}
+
+/* ── Route ───────────────────────────────────── */
+.route {
+  font-size:   clamp(0.85rem, 2vw, 1.1rem);
+  color:       var(--color-text-muted);
+  margin:      0;
+  line-height: 1.6;
+  max-width:   560px;
+}
+
+/* ── Date ────────────────────────────────────── */
+.date {
+  font-size:   var(--font-size-sm);
+  color:       var(--color-text-subtle);
+  margin:      0;
+  letter-spacing: 0.05em;
+}
+
+/* ── Mileage ─────────────────────────────────── */
+.mileage {
+  display:         flex;
+  flex-direction:  column;
+  gap:             10px;
+  background:      rgba(255, 255, 255, 0.04);
+  border:          1px solid var(--color-border);
+  border-radius:   var(--radius-xl);
+  padding:         var(--space-lg) var(--space-xl);
+  min-width:       220px;
+  margin-top:      var(--space-sm);
+}
+
+.mileageRow {
+  display:         flex;
+  align-items:     center;
+  justify-content: center;
+  gap:             var(--space-sm);
+}
+
+.mileageIcon {
+  font-size:   18px;
+  line-height: 1;
+  width:       24px;
+  text-align:  center;
+}
+
+.mileageValue {
+  font-size:   1.1rem;
+  font-weight: 600;
+}
+
+.mileageTotal {
+  border-top:  1px solid var(--color-border);
+  padding-top: 10px;
+  margin-top:  4px;
+}
+
+.mileageTotalValue {
+  font-size:   1.3rem;
+  font-weight: 800;
+  color:       var(--color-text);
+}

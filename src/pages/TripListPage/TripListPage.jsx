@@ -9,7 +9,6 @@ import Button from "@/components/common/Button";
 import { useState, useEffect, useMemo } from "react";
 import BackupSettingsModal from "@/components/BackupSettingsModal";
 
-
 const SORT_OPTIONS = [
   { value: "date-newest", label: "Newest" },
   { value: "date-oldest", label: "Oldest" },
@@ -18,41 +17,35 @@ const SORT_OPTIONS = [
 ];
 
 function sortTrips(trips, sortBy) {
-  const sorted = [...trips]; // never mutate the original array
+  const sorted = [...trips];
 
   switch (sortBy) {
     case "date-newest":
       return sorted.sort((a, b) => {
-        // Trips without a date fall to the bottom
         if (!a.date && !b.date) return 0;
         if (!a.date) return 1;
         if (!b.date) return -1;
         return b.date.localeCompare(a.date);
       });
-
     case "date-oldest":
       return sorted.sort((a, b) => {
-        // Trips without a date fall to the bottom
         if (!a.date && !b.date) return 0;
         if (!a.date) return 1;
         if (!b.date) return -1;
         return a.date.localeCompare(b.date);
       });
-
     case "miles-most":
       return sorted.sort((a, b) => {
         const aMiles = computeTripMileage(a)?.total || 0;
         const bMiles = computeTripMileage(b)?.total || 0;
         return bMiles - aMiles;
       });
-
     case "miles-least":
       return sorted.sort((a, b) => {
         const aMiles = computeTripMileage(a)?.total || 0;
         const bMiles = computeTripMileage(b)?.total || 0;
         return aMiles - bMiles;
       });
-
     default:
       return sorted;
   }
@@ -64,9 +57,10 @@ export default function TripListPage({
   onViewMap,
   onViewHistory,
   onViewGames,
+  onViewShowcase,
 }) {
   const { trips, loading, error, deleteTrip } = useTrips();
-  const [showBackup, setShowBackup] = useState(false);
+  const [showBackup,   setShowBackup]   = useState(false);
   const [sortBy,       setSortBy]       = useState("date-newest");
   const [storageUsage, setStorageUsage] = useState(null);
   const [cacheStats,   setCacheStats]   = useState(null);
@@ -76,7 +70,6 @@ export default function TripListPage({
     setCacheStats(getRouteCacheStats());
   }, [trips]);
 
-  // Recompute sorted list only when trips or sortBy changes
   const sortedTrips = useMemo(
     () => sortTrips(trips, sortBy),
     [trips, sortBy]
@@ -121,10 +114,12 @@ export default function TripListPage({
           </div>
         </div>
 
-
-        <div style={{ display: "flex", gap: "var(--space-sm)" }}>
+        <div style={{ display: "flex", gap: "var(--space-sm)", flexWrap: "wrap" }}>
           <Button variant="secondary" onClick={() => setShowBackup(true)} size="md">
             🗄️ Backup
+          </Button>
+          <Button variant="secondary" onClick={onViewShowcase} size="md">
+            ✨ Showcase
           </Button>
           <Button variant="secondary" onClick={onViewGames} size="md">
             🏆 Sports Tracker
@@ -170,12 +165,7 @@ export default function TripListPage({
             <img
               src="/logo.png"
               alt="Start your adventure"
-              style={{
-                width:     100,
-                height:    100,
-                objectFit: "contain",
-                opacity:   0.5,
-              }}
+              style={{ width: 100, height: 100, objectFit: "contain", opacity: 0.5 }}
             />
             <p>
               No trips yet. Click <strong>New Trip</strong> to start
@@ -232,7 +222,7 @@ export default function TripListPage({
               </div>
               {storageUsage.pct > 70 && (
                 <p className={styles.storageWarning}>
-                  ⚠ Storage almost full. Remove some photos to keep saving.
+                  ⚠ Storage almost full. Remove some photos to free up space.
                 </p>
               )}
             </div>
@@ -256,10 +246,10 @@ export default function TripListPage({
           </div>
         )}
       </footer>
+
       {showBackup && (
         <BackupSettingsModal onClose={() => setShowBackup(false)} />
       )}
     </div>
-
   );
 }

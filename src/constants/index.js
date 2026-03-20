@@ -1,4 +1,4 @@
-// src/constants/index.js  (add GAMES and GAME_EDIT to the VIEWS object)
+// src/constants/index.js
 export const STORAGE_KEY     = "road_trip_memories_v1";
 export const ROUTE_CACHE_KEY = "road_trip_routes_v1";
 
@@ -9,6 +9,7 @@ export const VIEWS = {
   HISTORY:   "history",
   GAMES:     "games",
   GAME_EDIT: "game_edit",
+  SHOWCASE:  "showcase",
 };
 
 export const STOP_COLORS = {
@@ -46,3 +47,5 @@ export const MAP_DEFAULTS = {
 export const MAX_PHOTOS_PREVIEW  = 5;
 export const MAX_IMAGE_SIZE_MB   = 1;
 export const MAX_IMAGE_DIMENSION = 1200;
+
+export const SLIDESHOW_INTERVAL_MS = 30_000;
