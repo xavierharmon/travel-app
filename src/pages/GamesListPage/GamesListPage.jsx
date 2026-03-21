@@ -3,6 +3,7 @@ import { useState } from "react";
 import styles from "./GamesListPage.module.css";
 import { useGames } from "@/context/GamesContext";
 import Button from "@/components/common/Button";
+import { usePhotoUrls } from "@/hooks/usePhotoUrls";
 
 // ── Win/Loss record banner ───────────────────────────────────────
 function RecordBanner({ games }) {
@@ -10,10 +11,7 @@ function RecordBanner({ games }) {
   const losses = games.filter(g => g.outcome === "loss").length;
   const ties   = games.filter(g => g.outcome === "tie").length;
   const total  = games.length;
-
-  const winPct = total > 0
-    ? ((wins / total) * 100).toFixed(0)
-    : null;
+  const winPct = total > 0 ? ((wins / total) * 100).toFixed(0) : null;
 
   return (
     <div className={styles.recordBanner}>
@@ -30,25 +28,13 @@ function RecordBanner({ games }) {
       </div>
       <div className={styles.recordMeta}>
         <span className={styles.recordTotal}>{total} game{total !== 1 ? "s" : ""} attended</span>
-        {winPct !== null && (
-          <span className={styles.recordPct}>{winPct}% win rate</span>
-        )}
+        {winPct !== null && <span className={styles.recordPct}>{winPct}% win rate</span>}
       </div>
-      {/* Win rate bar */}
       {total > 0 && (
         <div className={styles.recordBar}>
-          <div
-            className={styles.recordBarWin}
-            style={{ width: `${(wins / total) * 100}%` }}
-          />
-          <div
-            className={styles.recordBarTie}
-            style={{ width: `${(ties / total) * 100}%` }}
-          />
-          <div
-            className={styles.recordBarLoss}
-            style={{ width: `${(losses / total) * 100}%` }}
-          />
+          <div className={styles.recordBarWin}  style={{ width: `${(wins   / total) * 100}%` }} />
+          <div className={styles.recordBarTie}  style={{ width: `${(ties   / total) * 100}%` }} />
+          <div className={styles.recordBarLoss} style={{ width: `${(losses / total) * 100}%` }} />
         </div>
       )}
     </div>
@@ -66,16 +52,18 @@ function GameCard({ game, onEdit, onDelete }) {
   };
   const colors = outcomeColors[game.outcome] || outcomeColors.tie;
 
-  const hasScore = game.homeScore !== null && game.visitingScore !== null
-    && game.homeScore !== undefined && game.visitingScore !== undefined;
-
+  const hasScore      = game.homeScore !== null && game.visitingScore !== null
+                     && game.homeScore !== undefined && game.visitingScore !== undefined;
   const previewPhotos = (game.photos || []).slice(0, 3);
+
+  // Load photo thumbnails from IndexedDB
+  const photoUrls = usePhotoUrls(previewPhotos);
 
   return (
     <div className={styles.gameCard} style={{ borderColor: colors.border }}>
-      {/* Header row */}
+
+      {/* Header */}
       <div className={styles.cardHeader}>
-        {/* Outcome badge */}
         <span
           className={styles.outcomeBadge}
           style={{ background: colors.badgeBg, color: colors.badge }}
@@ -83,9 +71,7 @@ function GameCard({ game, onEdit, onDelete }) {
           {game.outcome?.toUpperCase() || "?"}
         </span>
 
-        {/* Teams + score */}
         <div className={styles.matchup}>
-          {/* Home team */}
           <div className={styles.matchupTeam}>
             {game.homeTeamLogo && (
               <img src={game.homeTeamLogo} alt={game.homeTeam} className={styles.teamLogoSmall} />
@@ -93,19 +79,18 @@ function GameCard({ game, onEdit, onDelete }) {
             <span className={styles.teamName}>{game.homeTeam || "Home"}</span>
           </div>
 
-          {/* Score or VS */}
           <div className={styles.scoreDisplay}>
-            {hasScore
-              ? <>
-                  <span className={styles.scoreNum}>{game.homeScore}</span>
-                  <span className={styles.scoreDash}>–</span>
-                  <span className={styles.scoreNum}>{game.visitingScore}</span>
-                </>
-              : <span className={styles.vsSmall}>VS</span>
-            }
+            {hasScore ? (
+              <>
+                <span className={styles.scoreNum}>{game.homeScore}</span>
+                <span className={styles.scoreDash}>–</span>
+                <span className={styles.scoreNum}>{game.visitingScore}</span>
+              </>
+            ) : (
+              <span className={styles.vsSmall}>VS</span>
+            )}
           </div>
 
-          {/* Visiting team */}
           <div className={`${styles.matchupTeam} ${styles.matchupTeamRight}`}>
             <span className={styles.teamName}>{game.visitingTeam || "Visitor"}</span>
             {game.visitingTeamLogo && (
@@ -114,40 +99,39 @@ function GameCard({ game, onEdit, onDelete }) {
           </div>
         </div>
 
-        {/* Actions */}
         <div className={styles.cardActions}>
           <Button variant="secondary" size="sm" onClick={() => onEdit(game)}>Edit</Button>
           <Button variant="danger"    size="sm" onClick={() => onDelete(game.id)}>✕</Button>
         </div>
       </div>
 
-      {/* Meta row */}
+      {/* Meta */}
       <div className={styles.cardMeta}>
-        {game.date && <span className={styles.metaChip}>📅 {game.date}</span>}
+        {game.date  && <span className={styles.metaChip}>📅 {game.date}</span>}
         {game.sport && <span className={styles.metaChip}>🏆 {game.sport}</span>}
         {game.venue && <span className={styles.metaChip}>🏟️ {game.venue}</span>}
         {game.city  && <span className={styles.metaChip}>📍 {game.city}</span>}
       </div>
 
-      {/* Photos strip */}
+      {/* Photo strip - loaded from IndexedDB */}
       {previewPhotos.length > 0 && (
         <div className={styles.photoStrip}>
-          {previewPhotos.map((photo, i) => (
-            <div key={photo.id} className={styles.photoThumb}>
-              <img
-                src={photo.dataUrl}
-                alt={`Game photo ${i + 1}`}
-                className={styles.photoImg}
-              />
-              {i === previewPhotos.length - 1 && (game.photos.length > 3) && (
-                <div className={styles.photoMore}>+{game.photos.length - 3}</div>
-              )}
-            </div>
-          ))}
+          {previewPhotos.map((photo, i) => {
+            const src = photoUrls.get(photo.id);
+            if (!src) return null;
+            return (
+              <div key={photo.id} className={styles.photoThumb}>
+                <img src={src} alt={`Game photo ${i + 1}`} className={styles.photoImg} />
+                {i === previewPhotos.length - 1 && game.photos.length > 3 && (
+                  <div className={styles.photoMore}>+{game.photos.length - 3}</div>
+                )}
+              </div>
+            );
+          })}
         </div>
       )}
 
-      {/* Description (expandable) */}
+      {/* Description */}
       {game.description && (
         <div className={styles.descRow}>
           <p className={`${styles.desc} ${expanded ? styles.descExpanded : ""}`}>
@@ -167,27 +151,22 @@ function GameCard({ game, onEdit, onDelete }) {
 // ── Main list page ───────────────────────────────────────────────
 export default function GamesListPage({ onNewGame, onEditGame, onBack }) {
   const { games, loading, deleteGame } = useGames();
-  const [sortBy, setSortBy] = useState("date_desc");
-  const [filterSport, setFilterSport] = useState("all");
-  const [filterOutcome, setFilterOutcome] = useState("all");
+  const [sortBy,         setSortBy]        = useState("date_desc");
+  const [filterSport,    setFilterSport]   = useState("all");
+  const [filterOutcome,  setFilterOutcome] = useState("all");
 
   function handleDelete(id) {
-    if (window.confirm("Delete this game? This cannot be undone.")) {
-      deleteGame(id);
-    }
+    if (window.confirm("Delete this game? This cannot be undone.")) deleteGame(id);
   }
 
-  // Sports for filter
   const sports = [...new Set(games.map(g => g.sport).filter(Boolean))].sort();
 
-  // Filter
   let filtered = games.filter(g => {
     if (filterSport   !== "all" && g.sport   !== filterSport)   return false;
     if (filterOutcome !== "all" && g.outcome  !== filterOutcome) return false;
     return true;
   });
 
-  // Sort
   filtered = [...filtered].sort((a, b) => {
     if (sortBy === "date_desc") return (b.date || "").localeCompare(a.date || "");
     if (sortBy === "date_asc")  return (a.date || "").localeCompare(b.date || "");
@@ -196,8 +175,6 @@ export default function GamesListPage({ onNewGame, onEditGame, onBack }) {
 
   return (
     <div className={styles.page}>
-
-      {/* Header */}
       <header className={styles.header}>
         <div className={styles.headerLeft}>
           <Button variant="ghost" onClick={onBack}>← Back</Button>
@@ -208,18 +185,13 @@ export default function GamesListPage({ onNewGame, onEditGame, onBack }) {
             </p>
           </div>
         </div>
-        <Button variant="primary" onClick={onNewGame} size="md">
-          + Log Game
-        </Button>
+        <Button variant="primary" onClick={onNewGame} size="md">+ Log Game</Button>
       </header>
 
-      {/* Record banner */}
       {games.length > 0 && <RecordBanner games={games} />}
 
-      {/* Filters */}
       {games.length > 1 && (
         <div className={styles.filterBar}>
-          {/* Outcome filter */}
           <div className={styles.filterGroup}>
             {["all", "win", "loss", "tie"].map(o => (
               <button
@@ -232,15 +204,12 @@ export default function GamesListPage({ onNewGame, onEditGame, onBack }) {
             ))}
           </div>
 
-          {/* Sport filter */}
           {sports.length > 1 && (
             <div className={styles.filterGroup}>
               <button
                 className={`${styles.filterBtn} ${filterSport === "all" ? styles.filterBtnActive : ""}`}
                 onClick={() => setFilterSport("all")}
-              >
-                All Sports
-              </button>
+              >All Sports</button>
               {sports.map(s => (
                 <button
                   key={s}
@@ -253,25 +222,19 @@ export default function GamesListPage({ onNewGame, onEditGame, onBack }) {
             </div>
           )}
 
-          {/* Sort */}
           <div className={styles.filterGroup} style={{ marginLeft: "auto" }}>
             <button
               className={`${styles.filterBtn} ${sortBy === "date_desc" ? styles.filterBtnActive : ""}`}
               onClick={() => setSortBy("date_desc")}
-            >
-              Newest
-            </button>
+            >Newest</button>
             <button
               className={`${styles.filterBtn} ${sortBy === "date_asc" ? styles.filterBtnActive : ""}`}
               onClick={() => setSortBy("date_asc")}
-            >
-              Oldest
-            </button>
+            >Oldest</button>
           </div>
         </div>
       )}
 
-      {/* Game list */}
       <main className={styles.main}>
         {loading ? (
           <div className={styles.empty}>Loading your games…</div>
@@ -281,18 +244,11 @@ export default function GamesListPage({ onNewGame, onEditGame, onBack }) {
             <p>No games logged yet.<br />Hit <strong>Log Game</strong> to get started!</p>
           </div>
         ) : filtered.length === 0 ? (
-          <div className={styles.empty}>
-            <p>No games match your filters.</p>
-          </div>
+          <div className={styles.empty}><p>No games match your filters.</p></div>
         ) : (
           <div className={styles.gameList}>
             {filtered.map(game => (
-              <GameCard
-                key={game.id}
-                game={game}
-                onEdit={onEditGame}
-                onDelete={handleDelete}
-              />
+              <GameCard key={game.id} game={game} onEdit={onEditGame} onDelete={handleDelete} />
             ))}
           </div>
         )}

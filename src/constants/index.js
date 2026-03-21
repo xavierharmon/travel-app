@@ -48,4 +48,4 @@ export const MAX_PHOTOS_PREVIEW  = 5;
 export const MAX_IMAGE_SIZE_MB   = 1;
 export const MAX_IMAGE_DIMENSION = 1200;
 
-export const SLIDESHOW_INTERVAL_MS = 30_000;
+export const SLIDESHOW_INTERVAL_MS = 9_000;

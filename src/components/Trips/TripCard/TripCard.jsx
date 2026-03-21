@@ -4,6 +4,7 @@ import { computeTripMileage } from "@/utils/tripMileage";
 import { formatMiles } from "@/utils/haversine";
 import { TRAVEL_MODE_LABELS, TRAVEL_MODE_COLORS, TRAVEL_MODES } from "@/constants";
 import Button from "@/components/common/Button";
+import { usePhotoUrls } from "@/hooks/usePhotoUrls";
 
 export default function TripCard({ trip, onView, onEdit, onDelete }) {
   const mileage = computeTripMileage(trip);
@@ -22,13 +23,12 @@ export default function TripCard({ trip, onView, onEdit, onDelete }) {
   const previewPhotos = allPhotos.slice(0, 4);
   const extraCount    = allPhotos.length - previewPhotos.length;
 
+  // Load dataUrls for the preview strip from IndexedDB
+  const photoUrls = usePhotoUrls(previewPhotos);
+
   const modesUsed = new Set();
-  (trip.stops || []).forEach(s =>
-    modesUsed.add(s.travelMode || TRAVEL_MODES.DRIVE)
-  );
-  if (trip.destination) {
-    modesUsed.add(trip.destinationTravelMode || TRAVEL_MODES.DRIVE);
-  }
+  (trip.stops || []).forEach(s => modesUsed.add(s.travelMode || TRAVEL_MODES.DRIVE));
+  if (trip.destination) modesUsed.add(trip.destinationTravelMode || TRAVEL_MODES.DRIVE);
 
   return (
     <div className={styles.card}>
@@ -44,34 +44,22 @@ export default function TripCard({ trip, onView, onEdit, onDelete }) {
             {mileage && mileage.total > 0 && (
               <div className={styles.inlineMileage}>
                 {mileage.drive > 0 && (
-                  <span
-                    className={styles.mileagePill}
-                    style={{ color: TRAVEL_MODE_COLORS[TRAVEL_MODES.DRIVE] }}
-                  >
+                  <span className={styles.mileagePill} style={{ color: TRAVEL_MODE_COLORS[TRAVEL_MODES.DRIVE] }}>
                     🚗 {formatMiles(mileage.drive)}{mileage.hasUncachedDrive ? "~" : ""}
                   </span>
                 )}
                 {mileage.flight > 0 && (
-                  <span
-                    className={styles.mileagePill}
-                    style={{ color: TRAVEL_MODE_COLORS[TRAVEL_MODES.FLIGHT] }}
-                  >
+                  <span className={styles.mileagePill} style={{ color: TRAVEL_MODE_COLORS[TRAVEL_MODES.FLIGHT] }}>
                     ✈️ {formatMiles(mileage.flight)}
                   </span>
                 )}
                 {mileage.boat > 0 && (
-                  <span
-                    className={styles.mileagePill}
-                    style={{ color: TRAVEL_MODE_COLORS[TRAVEL_MODES.BOAT] }}
-                  >
+                  <span className={styles.mileagePill} style={{ color: TRAVEL_MODE_COLORS[TRAVEL_MODES.BOAT] }}>
                     ⛵ {formatMiles(mileage.boat)}
                   </span>
                 )}
                 {mileage.train > 0 && (
-                  <span
-                    className={styles.mileagePill}
-                    style={{ color: TRAVEL_MODE_COLORS[TRAVEL_MODES.TRAIN] }}
-                  >
+                  <span className={styles.mileagePill} style={{ color: TRAVEL_MODE_COLORS[TRAVEL_MODES.TRAIN] }}>
                     🚞 {formatMiles(mileage.train)}
                   </span>
                 )}
@@ -84,18 +72,13 @@ export default function TripCard({ trip, onView, onEdit, onDelete }) {
 
           {/* Date + travel mode pills */}
           <div className={styles.metaRow}>
-            {trip.date && (
-              <span className={styles.date}>{trip.date}</span>
-            )}
+            {trip.date && <span className={styles.date}>{trip.date}</span>}
             {[...modesUsed].map(mode => (
-              <span key={mode} className={styles.modePill}>
-                {TRAVEL_MODE_LABELS[mode]}
-              </span>
+              <span key={mode} className={styles.modePill}>{TRAVEL_MODE_LABELS[mode]}</span>
             ))}
           </div>
         </div>
 
-        {/* Action buttons */}
         <div className={styles.actions}>
           <Button variant="ghost"     size="sm" onClick={() => onView(trip)}>Map</Button>
           <Button variant="secondary" size="sm" onClick={() => onEdit(trip)}>Edit</Button>
@@ -115,24 +98,26 @@ export default function TripCard({ trip, onView, onEdit, onDelete }) {
         </div>
       )}
 
-      {/* ── Thumbnail photo strip ──────────────── */}
+      {/* ── Photo strip ───────────────────────── */}
       {previewPhotos.length > 0 && (
         <div className={styles.photoStrip}>
-          {previewPhotos.map((photo, i) => (
-            <div key={photo.id} className={styles.photoThumb}>
-              <img
-                src={photo.dataUrl}
-                alt={photo.caption || `Photo ${i + 1}`}
-                className={styles.photoImg}
-                onError={e => {
-                  e.target.closest(`.${styles.photoThumb}`).style.display = "none";
-                }}
-              />
-              {i === previewPhotos.length - 1 && extraCount > 0 && (
-                <div className={styles.photoOverlay}>+{extraCount}</div>
-              )}
-            </div>
-          ))}
+          {previewPhotos.map((photo, i) => {
+            const src = photoUrls.get(photo.id);
+            if (!src) return null; // skip until IDB loads
+            return (
+              <div key={photo.id} className={styles.photoThumb}>
+                <img
+                  src={src}
+                  alt={photo.caption || `Photo ${i + 1}`}
+                  className={styles.photoImg}
+                  onError={e => e.target.closest(`.${styles.photoThumb}`).style.display = "none"}
+                />
+                {i === previewPhotos.length - 1 && extraCount > 0 && (
+                  <div className={styles.photoOverlay}>+{extraCount}</div>
+                )}
+              </div>
+            );
+          })}
         </div>
       )}
 

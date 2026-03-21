@@ -3,6 +3,7 @@ import styles from "./TripListPage.module.css";
 import { useTrips } from "@/hooks/useTrips";
 import { getStorageUsage } from "@/utils/storage";
 import { getRouteCacheStats, clearAllStoredRoutes } from "@/utils/routeStorage";
+import { getPhotoStorageStats } from "@/utils/photoStorage";
 import { computeTripMileage } from "@/utils/tripMileage";
 import TripCard from "@/components/trips/TripCard";
 import Button from "@/components/common/Button";
@@ -16,9 +17,15 @@ const SORT_OPTIONS = [
   { value: "miles-least", label: "Least Miles" },
 ];
 
+const KEY_LABELS = {
+  "road_trip_memories_v1": "Trips",
+  "sports_games_v1":       "Games",
+  "road_trip_routes_v1":   "Routes",
+  "road_trip_mileage_v1":  "Mileage",
+};
+
 function sortTrips(trips, sortBy) {
   const sorted = [...trips];
-
   switch (sortBy) {
     case "date-newest":
       return sorted.sort((a, b) => {
@@ -60,14 +67,17 @@ export default function TripListPage({
   onViewShowcase,
 }) {
   const { trips, loading, error, deleteTrip } = useTrips();
-  const [showBackup,   setShowBackup]   = useState(false);
-  const [sortBy,       setSortBy]       = useState("date-newest");
-  const [storageUsage, setStorageUsage] = useState(null);
-  const [cacheStats,   setCacheStats]   = useState(null);
+  const [showBackup,    setShowBackup]    = useState(false);
+  const [sortBy,        setSortBy]        = useState("date-newest");
+  const [storageUsage,  setStorageUsage]  = useState(null);
+  const [cacheStats,    setCacheStats]    = useState(null);
+  const [photoStats,    setPhotoStats]    = useState(null);
+  const [showBreakdown, setShowBreakdown] = useState(false);
 
   useEffect(() => {
     setStorageUsage(getStorageUsage());
     setCacheStats(getRouteCacheStats());
+    getPhotoStorageStats().then(setPhotoStats);
   }, [trips]);
 
   const sortedTrips = useMemo(
@@ -88,7 +98,15 @@ export default function TripListPage({
     )) {
       clearAllStoredRoutes();
       setCacheStats(getRouteCacheStats());
+      setStorageUsage(getStorageUsage());
     }
+  }
+
+  // Bar color based on percentage
+  function barColor(pct) {
+    if (pct > 70) return "var(--color-danger)";
+    if (pct > 40) return "var(--color-warning)";
+    return "var(--color-primary)";
   }
 
   return (
@@ -134,9 +152,7 @@ export default function TripListPage({
       </header>
 
       {/* ── Error banner ─────────────────────────── */}
-      {error && (
-        <div className={styles.errorBanner}>{error}</div>
-      )}
+      {error && <div className={styles.errorBanner}>{error}</div>}
 
       {/* ── Sort controls ────────────────────────── */}
       {!loading && trips.length > 1 && (
@@ -187,53 +203,92 @@ export default function TripListPage({
         )}
       </main>
 
-      {/* ── Footer — storage info ─────────────────── */}
+      {/* ── Footer ───────────────────────────────── */}
       <footer className={styles.footer}>
         <div className={styles.footerLeft}>
           {storageUsage && (
             <div className={styles.storageInfo}>
+
+              {/* ── localStorage bar ────────────────── */}
               <div className={styles.storageRow}>
                 <span className={styles.storageLabel}>
-                  Storage: {storageUsage.mb}MB / 5MB
+                  Metadata · {storageUsage.mb}MB / 5MB
                 </span>
                 <span
                   className={styles.storagePct}
-                  style={{
-                    color: storageUsage.pct > 70
-                      ? "var(--color-danger)"
-                      : "var(--color-text-subtle)",
-                  }}
+                  style={{ color: barColor(storageUsage.pct) }}
                 >
                   {storageUsage.pct}%
                 </span>
+                <button
+                  className={styles.clearCacheBtn}
+                  onClick={() => setShowBreakdown(b => !b)}
+                  style={{ marginLeft: 6 }}
+                >
+                  {showBreakdown ? "hide" : "breakdown"}
+                </button>
               </div>
+
               <div className={styles.storageBar}>
                 <div
                   className={styles.storageBarFill}
                   style={{
                     width:      `${Math.min(storageUsage.pct, 100)}%`,
-                    background: storageUsage.pct > 70
-                      ? "var(--color-danger)"
-                      : storageUsage.pct > 40
-                      ? "var(--color-warning)"
-                      : "var(--color-primary)",
+                    background: barColor(storageUsage.pct),
                   }}
                 />
               </div>
+
+              {/* ── Per-key breakdown ───────────────── */}
+              {showBreakdown && storageUsage.breakdown && (
+                <div style={{
+                  display:       "flex",
+                  flexWrap:      "wrap",
+                  gap:           "var(--space-sm)",
+                  marginTop:     4,
+                }}>
+                  {Object.entries(storageUsage.breakdown).map(([key, val]) => (
+                    <span
+                      key={key}
+                      style={{
+                        fontSize:      11,
+                        color:         "var(--color-text-subtle)",
+                        background:    "var(--color-surface-2)",
+                        border:        "1px solid var(--color-border)",
+                        borderRadius:  "var(--radius-sm)",
+                        padding:       "2px 8px",
+                      }}
+                    >
+                      {KEY_LABELS[key] || key}: {val.kb}KB
+                    </span>
+                  ))}
+                </div>
+              )}
+
+              {/* ── IndexedDB photo storage ──────────── */}
+              {photoStats && (
+                <div className={styles.storageRow} style={{ marginTop: 6 }}>
+                  <span className={styles.storageLabel}>
+                    📷 Photos (IndexedDB) · {photoStats.count} photo{photoStats.count !== 1 ? "s" : ""} · {photoStats.estimatedMb}MB
+                  </span>
+                </div>
+              )}
+
               {storageUsage.pct > 70 && (
                 <p className={styles.storageWarning}>
-                  ⚠ Storage almost full. Remove some photos to free up space.
+                  ⚠ Metadata storage almost full. Clear route cache to free up space.
                 </p>
               )}
             </div>
           )}
         </div>
 
+        {/* ── Route cache + clear ──────────────────── */}
         {cacheStats && (
           <div className={styles.footerRight}>
             <span className={styles.cacheLabel}>
               {cacheStats.count} route{cacheStats.count !== 1 ? "s" : ""} cached
-              · {cacheStats.sizeKb} KB
+              · {cacheStats.sizeKb}KB
             </span>
             {cacheStats.count > 0 && (
               <button

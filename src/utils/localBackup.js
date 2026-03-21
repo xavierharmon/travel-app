@@ -1,5 +1,27 @@
 // src/utils/localBackup.js
-// Handles manual JSON export and import of all app data.
+//
+// Updated to include IndexedDB photos in exports and restore them on import.
+// The backup file format is unchanged except for an added "photos" key:
+//
+//   {
+//     version:    2,
+//     exportedAt: "...",
+//     appName:    "...",
+//     data: {
+//       road_trip_memories_v1: [...],   // metadata only, no dataUrls
+//       sports_games_v1:       [...],
+//       ...
+//     },
+//     photos: {                          // NEW — from IndexedDB
+//       "photo_abc123": "data:image/jpeg;base64,...",
+//       ...
+//     }
+//   }
+//
+// Version 1 backups (with dataUrls embedded in data) are still importable
+// — the import function detects them and routes photos correctly.
+
+import { exportAllPhotos, importAllPhotos } from "@/utils/photoStorage";
 
 const BACKUP_KEYS = [
   "road_trip_memories_v1",
@@ -8,20 +30,26 @@ const BACKUP_KEYS = [
   "sports_games_v1",
 ];
 
-export function exportToFile() {
+// ── Export ───────────────────────────────────────────────────────
+export async function exportToFile() {
+  // Collect localStorage metadata
   const data = {};
   BACKUP_KEYS.forEach(key => {
     const val = localStorage.getItem(key);
     if (val) {
-      try { data[key] = JSON.parse(val); } catch { /* skip corrupt keys */ }
+      try { data[key] = JSON.parse(val); } catch { /* skip */ }
     }
   });
 
+  // Collect ALL photos from IndexedDB
+  const photos = await exportAllPhotos();
+
   const payload = JSON.stringify({
-    version:    1,
+    version:    2,
     exportedAt: new Date().toISOString(),
     appName:    "Xavier & Kylie's Adventures",
     data,
+    photos,     // { [photoId]: dataUrl }
   }, null, 2);
 
   const blob = new Blob([payload], { type: "application/json" });
@@ -33,15 +61,17 @@ export function exportToFile() {
   URL.revokeObjectURL(url);
 }
 
+// ── Import ───────────────────────────────────────────────────────
 export function importFromFile(file) {
   return new Promise((resolve, reject) => {
-    const reader = new FileReader();
+    const reader   = new FileReader();
     reader.onerror = () => reject(new Error("Failed to read file."));
-    reader.onload  = (e) => {
+    reader.onload  = async (e) => {
       try {
         const backup = JSON.parse(e.target.result);
         if (!backup?.data) throw new Error("This doesn't look like a valid backup file.");
 
+        // ── Restore localStorage keys ──────────────────────────
         let restored = 0;
         Object.entries(backup.data).forEach(([key, value]) => {
           if (BACKUP_KEYS.includes(key)) {
@@ -49,6 +79,16 @@ export function importFromFile(file) {
             restored++;
           }
         });
+
+        // ── Restore photos ─────────────────────────────────────
+        if (backup.photos && typeof backup.photos === "object") {
+          // Version 2: photos are in the top-level "photos" key
+          await importAllPhotos(backup.photos);
+        } else if (backup.version === 1 || !backup.version) {
+          // Version 1: dataUrls were embedded inside trip/game objects
+          // Extract and migrate them into IndexedDB
+          await _extractAndImportLegacyPhotos(backup.data);
+        }
 
         resolve({ success: true, exportedAt: backup.exportedAt, restored });
       } catch (err) {
@@ -59,6 +99,50 @@ export function importFromFile(file) {
   });
 }
 
+// ── Legacy v1 photo extractor ────────────────────────────────────
+// Walks the old data format, pulls out any dataUrl fields,
+// saves them to IndexedDB, and strips them from the stored objects.
+async function _extractAndImportLegacyPhotos(data) {
+  const photosToImport = {};
+
+  function extractFromArray(items) {
+    return (items || []).map(item => {
+      const updated = { ...item };
+      if (item.photos) {
+        updated.photos = (item.photos || []).map(photo => {
+          if (photo.dataUrl) {
+            photosToImport[photo.id] = photo.dataUrl;
+            return { ...photo, dataUrl: null, _migratedToIDB: true };
+          }
+          return photo;
+        });
+      }
+      return updated;
+    });
+  }
+
+  // Extract from trips (including stop photos)
+  if (data["road_trip_memories_v1"]) {
+    const trips = extractFromArray(data["road_trip_memories_v1"]).map(trip => ({
+      ...trip,
+      stops: extractFromArray(trip.stops || []),
+    }));
+    localStorage.setItem("road_trip_memories_v1", JSON.stringify(trips));
+  }
+
+  // Extract from games
+  if (data["sports_games_v1"]) {
+    const games = extractFromArray(data["sports_games_v1"]);
+    localStorage.setItem("sports_games_v1", JSON.stringify(games));
+  }
+
+  if (Object.keys(photosToImport).length > 0) {
+    await importAllPhotos(photosToImport);
+    console.log(`[localBackup] Imported ${Object.keys(photosToImport).length} legacy photos into IndexedDB`);
+  }
+}
+
+// ── Summary (unchanged) ──────────────────────────────────────────
 export function getBackupSummary() {
   let trips  = 0;
   let games  = 0;

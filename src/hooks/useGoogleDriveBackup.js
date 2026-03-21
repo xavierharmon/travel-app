@@ -1,19 +1,24 @@
-// src/hooks/useGoogleDriveBackup.js  (updated — replaces previous version)
+// src/hooks/useGoogleDriveBackup.js
 //
-// Added in this version:
-//   - checkForNewerBackup()  — silently checks Drive on app load, returns
-//     { hasNewer, driveDate, localDate } without touching any local data.
-//   - autoBackup()           — backs up silently with no UI state changes,
-//     called after every save when connected.
+// Updated to include IndexedDB photos in Drive backups.
 //
-// Setup required (one-time, in Google Cloud Console):
-//   1. Create a project → Enable "Google Drive API"
-//   2. OAuth consent screen → External → add scope: .../auth/drive.appdata
-//   3. Credentials → OAuth 2.0 Client ID → Web application
-//      → Authorised JS origins: your app's URL (e.g. http://localhost:5173)
-//   4. Copy the Client ID into VITE_GOOGLE_CLIENT_ID in your .env file
+// IMPORTANT — Drive file size:
+//   Photos are base64 strings. Hundreds of photos can easily be
+//   10-50MB. Google Drive's multipart upload supports up to 5MB
+//   before requiring a resumable upload. This implementation
+//   automatically uses a resumable upload when the payload exceeds
+//   4MB, keeping it reliable at any scale.
+//
+// Backup file structure (version 2):
+//   {
+//     version:    2,
+//     exportedAt: "...",
+//     data:       { ...localStorage keys... },
+//     photos:     { [photoId]: dataUrl, ... }   ← from IndexedDB
+//   }
 
 import { useState, useEffect, useCallback } from "react";
+import { exportAllPhotos, importAllPhotos } from "@/utils/photoStorage";
 
 const CLIENT_ID     = import.meta.env.VITE_GOOGLE_CLIENT_ID || "";
 const SCOPE         = "https://www.googleapis.com/auth/drive.appdata";
@@ -36,9 +41,7 @@ function loadToken() {
     const t = JSON.parse(raw);
     if (Date.now() - t.savedAt > 55 * 60 * 1000) return null;
     return t.access_token;
-  } catch {
-    return null;
-  }
+  } catch { return null; }
 }
 
 function saveToken(access_token) {
@@ -67,12 +70,27 @@ async function downloadBackup(token, fileId) {
   return res.json();
 }
 
+// ── Smart upload: multipart for small payloads, resumable for large ──
+const MULTIPART_THRESHOLD = 4 * 1024 * 1024; // 4 MB
+
 async function uploadBackup(token, payload, existingId) {
+  const jsonString = JSON.stringify(payload);
+  const byteSize   = new Blob([jsonString]).size;
+
+  if (byteSize <= MULTIPART_THRESHOLD) {
+    return _multipartUpload(token, jsonString, existingId);
+  } else {
+    console.log(`[DriveBackup] Payload is ${(byteSize / 1024 / 1024).toFixed(1)}MB — using resumable upload`);
+    return _resumableUpload(token, jsonString, existingId);
+  }
+}
+
+async function _multipartUpload(token, jsonString, existingId) {
   const metadata = {
     name:    BACKUP_FILE,
     parents: existingId ? undefined : ["appDataFolder"],
   };
-  const blob = new Blob([JSON.stringify(payload)], { type: "application/json" });
+  const blob = new Blob([jsonString], { type: "application/json" });
   const form = new FormData();
   form.append("metadata", new Blob([JSON.stringify(metadata)], { type: "application/json" }));
   form.append("file", blob);
@@ -87,11 +105,51 @@ async function uploadBackup(token, payload, existingId) {
     headers: { Authorization: `Bearer ${token}` },
     body: form,
   });
-  if (!res.ok) throw new Error(`Upload failed: ${res.status}`);
+  if (!res.ok) throw new Error(`Multipart upload failed: ${res.status}`);
   return res.json();
 }
 
-function collectLocalData() {
+async function _resumableUpload(token, jsonString, existingId) {
+  const metadata = {
+    name:    BACKUP_FILE,
+    parents: existingId ? undefined : ["appDataFolder"],
+  };
+
+  const method  = existingId ? "PATCH" : "POST";
+  const initUrl = existingId
+    ? `https://www.googleapis.com/upload/drive/v3/files/${existingId}?uploadType=resumable`
+    : `https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable`;
+
+  // Step 1: initiate — get upload URL
+  const initRes = await fetch(initUrl, {
+    method,
+    headers: {
+      Authorization:   `Bearer ${token}`,
+      "Content-Type":  "application/json",
+      "X-Upload-Content-Type": "application/json",
+    },
+    body: JSON.stringify(metadata),
+  });
+
+  if (!initRes.ok) throw new Error(`Resumable init failed: ${initRes.status}`);
+
+  const uploadUrl = initRes.headers.get("Location");
+  if (!uploadUrl) throw new Error("No upload URL returned from Drive");
+
+  // Step 2: upload the full payload
+  const uploadRes = await fetch(uploadUrl, {
+    method:  "PUT",
+    headers: { "Content-Type": "application/json" },
+    body:    jsonString,
+  });
+
+  if (!uploadRes.ok) throw new Error(`Resumable upload failed: ${uploadRes.status}`);
+  return uploadRes.json();
+}
+
+// ── Collect all data for backup ──────────────────────────────────
+async function collectAllData() {
+  // Metadata from localStorage
   const data = {};
   BACKUP_KEYS.forEach(key => {
     const val = localStorage.getItem(key);
@@ -99,7 +157,11 @@ function collectLocalData() {
       try { data[key] = JSON.parse(val); } catch { /* skip */ }
     }
   });
-  return data;
+
+  // Photos from IndexedDB
+  const photos = await exportAllPhotos();
+
+  return { data, photos };
 }
 
 function applyBackupToLocalStorage(backupData) {
@@ -203,8 +265,14 @@ export function useGoogleDriveBackup() {
     setStatus("syncing");
     setError(null);
     try {
-      const existing = await findBackupFile(token);
-      const payload  = { version: 1, exportedAt: new Date().toISOString(), data: collectLocalData() };
+      const existing       = await findBackupFile(token);
+      const { data, photos } = await collectAllData();
+      const payload        = {
+        version:    2,
+        exportedAt: new Date().toISOString(),
+        data,
+        photos,
+      };
       await uploadBackup(token, payload, existing?.id);
       const now = new Date().toISOString();
       setLastSync(now);
@@ -216,46 +284,44 @@ export function useGoogleDriveBackup() {
     }
   }, []);
 
-  // ── Silent auto-backup (no UI state change) ────────────────────
-  // Called automatically after saves when connected.
+  // ── Silent auto-backup ─────────────────────────────────────────
   const autoBackup = useCallback(async () => {
     const token = loadToken();
     if (!token) return;
     try {
-      const existing = await findBackupFile(token);
-      const payload  = { version: 1, exportedAt: new Date().toISOString(), data: collectLocalData() };
+      const existing       = await findBackupFile(token);
+      const { data, photos } = await collectAllData();
+      const payload        = {
+        version:    2,
+        exportedAt: new Date().toISOString(),
+        data,
+        photos,
+      };
       await uploadBackup(token, payload, existing?.id);
       const now = new Date().toISOString();
       setLastSync(now);
       localStorage.setItem(LAST_SYNC_KEY, now);
       console.log("[autoBackup] silent backup complete ✓");
     } catch (err) {
-      // Silent — don't surface errors for background backups
       console.warn("[autoBackup] silent backup failed:", err.message);
     }
   }, []);
 
-  // ── Check for newer backup on Drive (non-destructive) ─────────
-  // Returns { hasNewer: bool, driveDate: string|null, localDate: string|null }
-  // Does NOT modify local data. Used by AutoSyncProvider on app load.
+  // ── Check for newer backup (non-destructive) ───────────────────
   const checkForNewerBackup = useCallback(async () => {
     const token = loadToken();
     if (!token) return { hasNewer: false, driveDate: null, localDate: null };
-
     try {
       const file = await findBackupFile(token);
       if (!file) return { hasNewer: false, driveDate: null, localDate: null };
 
-      // Download just enough to compare dates — we need exportedAt from the file body
       const backup    = await downloadBackup(token, file.id);
       const driveDate = backup?.exportedAt ?? null;
       const localDate = localStorage.getItem(LAST_SYNC_KEY);
 
       if (!driveDate) return { hasNewer: false, driveDate: null, localDate };
 
-      // Drive is newer if we've never synced locally, or if Drive's timestamp is later
       const hasNewer = !localDate || new Date(driveDate) > new Date(localDate);
-
       return { hasNewer, driveDate, localDate, backup };
     } catch (err) {
       console.warn("[checkForNewerBackup] check failed:", err.message);
@@ -263,7 +329,7 @@ export function useGoogleDriveBackup() {
     }
   }, []);
 
-  // ── Restore from Drive (with UI feedback) ─────────────────────
+  // ── Restore from Drive ─────────────────────────────────────────
   const restoreFromDrive = useCallback(async (preloadedBackup = null) => {
     const token = loadToken();
     if (!token) { setStatus("idle"); return { success: false }; }
@@ -277,9 +343,16 @@ export function useGoogleDriveBackup() {
         backup = await downloadBackup(token, file.id);
       }
       if (!backup?.data) throw new Error("Backup file is empty or corrupted.");
+
+      // Restore metadata to localStorage
       applyBackupToLocalStorage(backup.data);
 
-      // Update last-sync to match the Drive backup's timestamp
+      // Restore photos to IndexedDB
+      if (backup.photos && typeof backup.photos === "object") {
+        await importAllPhotos(backup.photos);
+        console.log(`[restoreFromDrive] Restored ${Object.keys(backup.photos).length} photos to IndexedDB`);
+      }
+
       if (backup.exportedAt) {
         setLastSync(backup.exportedAt);
         localStorage.setItem(LAST_SYNC_KEY, backup.exportedAt);
