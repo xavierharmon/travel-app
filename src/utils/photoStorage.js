@@ -1,27 +1,23 @@
 // src/utils/photoStorage.js
 //
-// IndexedDB-backed photo storage. Replaces the dataUrl field that was
-// previously embedded inside localStorage trip/game objects.
+// IndexedDB-backed storage for both photos and team logos.
 //
 // Schema:
 //   DB name:    "adventures_photos"
-//   Version:    1
-//   Store name: "photos"
-//   Key:        photo.id  (string, e.g. "photo_1234567890_abc12")
-//   Value:      { id, dataUrl, savedAt }
-//
-// All functions are async and return Promises.
-// The DB opens lazily on first call and is reused for the session.
+//   Version:    2  (bumped from 1 to add logos store)
+//   Stores:
+//     "photos"  — key: photo.id
+//     "logos"   — key: "logo_TeamName"
 //
 // Google Drive migration path:
-//   When Drive photo sync is added, replace getPhoto / savePhoto /
-//   deletePhoto with Drive API calls. The calling code (PhotoGrid,
-//   contexts, backup) never touches IndexedDB directly — they all go
-//   through this module, so the swap is a single-file change.
+//   Replace individual get/save/delete functions with Drive API calls.
+//   All calling code goes through this module only — nothing else
+//   touches IndexedDB directly.
 
-const DB_NAME    = "adventures_photos";
-const DB_VERSION = 1;
-const STORE_NAME = "photos";
+const DB_NAME     = "adventures_photos";
+const DB_VERSION  = 2;
+const PHOTO_STORE = "photos";
+const LOGO_STORE  = "logos";
 
 // ── Internal: open (or reuse) the DB ────────────────────────────
 let _db = null;
@@ -33,228 +29,280 @@ function openDB() {
     const req = indexedDB.open(DB_NAME, DB_VERSION);
 
     req.onupgradeneeded = (e) => {
-      const db = e.target.result;
-      if (!db.objectStoreNames.contains(STORE_NAME)) {
-        db.createObjectStore(STORE_NAME, { keyPath: "id" });
+      const db     = e.target.result;
+      const oldVer = e.oldVersion;
+
+      // v1 → photos store (may already exist on first install)
+      if (!db.objectStoreNames.contains(PHOTO_STORE)) {
+        db.createObjectStore(PHOTO_STORE, { keyPath: "id" });
+      }
+
+      // v2 → logos store
+      if (oldVer < 2 && !db.objectStoreNames.contains(LOGO_STORE)) {
+        db.createObjectStore(LOGO_STORE, { keyPath: "id" });
       }
     };
 
-    req.onsuccess = (e) => {
-      _db = e.target.result;
-      resolve(_db);
-    };
-
-    req.onerror = (e) => {
-      reject(new Error(`IndexedDB open failed: ${e.target.error}`));
-    };
+    req.onsuccess = (e) => { _db = e.target.result; resolve(_db); };
+    req.onerror   = (e) => reject(new Error(`IndexedDB open failed: ${e.target.error}`));
   });
 }
 
-// ── Internal: run a transaction ──────────────────────────────────
-async function withStore(mode, fn) {
+// ── Internal: single-request transaction helper ──────────────────
+async function withStore(storeName, mode, fn) {
   const db = await openDB();
   return new Promise((resolve, reject) => {
-    const tx    = db.transaction(STORE_NAME, mode);
-    const store = tx.objectStore(STORE_NAME);
+    const tx    = db.transaction(storeName, mode);
+    const store = tx.objectStore(storeName);
     const req   = fn(store);
-
     req.onsuccess = () => resolve(req.result);
-    req.onerror   = () => reject(new Error(`IndexedDB ${mode} failed: ${req.error}`));
+    req.onerror   = () => reject(new Error(`IDB ${mode} on ${storeName} failed: ${req.error}`));
   });
 }
 
-// ── Public API ───────────────────────────────────────────────────
+// ── Internal: cursor over an entire store ────────────────────────
+async function exportStore(storeName) {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const result = {};
+    const tx     = db.transaction(storeName, "readonly");
+    const store  = tx.objectStore(storeName);
+    const cursor = store.openCursor();
+    cursor.onsuccess = (e) => {
+      const c = e.target.result;
+      if (c) { result[c.value.id] = c.value.dataUrl; c.continue(); }
+      else   { resolve(result); }
+    };
+    cursor.onerror = () => reject(new Error(`Export cursor on ${storeName} failed`));
+  });
+}
 
-/**
- * Save a single photo.
- * @param {string} id      - photo.id
- * @param {string} dataUrl - base64 data URL
- */
+// ── Internal: bulk import into a store ──────────────────────────
+async function importStore(storeName, obj, buildRecord) {
+  if (!obj || typeof obj !== "object") return;
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx    = db.transaction(storeName, "readwrite");
+    const store = tx.objectStore(storeName);
+    Object.entries(obj).forEach(([id, dataUrl]) => {
+      if (id && dataUrl) store.put(buildRecord(id, dataUrl));
+    });
+    tx.oncomplete = () => resolve();
+    tx.onerror    = () => reject(new Error(`Import into ${storeName} failed: ${tx.error}`));
+  });
+}
+
+// ════════════════════════════════════════════════════════════════
+// PHOTOS
+// ════════════════════════════════════════════════════════════════
+
 export async function savePhoto(id, dataUrl) {
   if (!id || !dataUrl) return;
-  await withStore("readwrite", store =>
+  await withStore(PHOTO_STORE, "readwrite", store =>
     store.put({ id, dataUrl, savedAt: new Date().toISOString() })
   );
 }
 
-/**
- * Retrieve a single photo's dataUrl, or null if not found.
- * @param {string} id
- * @returns {Promise<string|null>}
- */
 export async function getPhoto(id) {
   if (!id) return null;
   try {
-    const result = await withStore("readonly", store => store.get(id));
+    const result = await withStore(PHOTO_STORE, "readonly", store => store.get(id));
     return result?.dataUrl ?? null;
-  } catch {
-    return null;
-  }
+  } catch { return null; }
 }
 
-/**
- * Retrieve many photos at once. Returns a Map<id, dataUrl>.
- * Missing IDs are simply absent from the map.
- * @param {string[]} ids
- * @returns {Promise<Map<string, string>>}
- */
 export async function getPhotos(ids) {
   if (!ids?.length) return new Map();
   const db = await openDB();
-
-  return new Promise((resolve, reject) => {
-    const map   = new Map();
-    const tx    = db.transaction(STORE_NAME, "readonly");
-    const store = tx.objectStore(STORE_NAME);
-    let pending = ids.length;
-
+  return new Promise((resolve) => {
+    const map     = new Map();
+    const tx      = db.transaction(PHOTO_STORE, "readonly");
+    const store   = tx.objectStore(PHOTO_STORE);
+    let   pending = ids.length;
     if (pending === 0) { resolve(map); return; }
-
     ids.forEach(id => {
-      const req      = store.get(id);
-      req.onsuccess  = () => {
+      const req     = store.get(id);
+      req.onsuccess = () => {
         if (req.result?.dataUrl) map.set(id, req.result.dataUrl);
         if (--pending === 0) resolve(map);
       };
-      req.onerror = () => {
-        if (--pending === 0) resolve(map); // non-fatal
-      };
+      req.onerror = () => { if (--pending === 0) resolve(map); };
     });
   });
 }
 
-/**
- * Delete a single photo.
- * @param {string} id
- */
 export async function deletePhoto(id) {
   if (!id) return;
-  await withStore("readwrite", store => store.delete(id));
+  await withStore(PHOTO_STORE, "readwrite", store => store.delete(id));
 }
 
-/**
- * Delete many photos at once.
- * @param {string[]} ids
- */
 export async function deletePhotos(ids) {
   if (!ids?.length) return;
   const db = await openDB();
-
   return new Promise((resolve, reject) => {
-    const tx    = db.transaction(STORE_NAME, "readwrite");
-    const store = tx.objectStore(STORE_NAME);
+    const tx    = db.transaction(PHOTO_STORE, "readwrite");
+    const store = tx.objectStore(PHOTO_STORE);
     ids.forEach(id => store.delete(id));
     tx.oncomplete = () => resolve();
-    tx.onerror    = () => reject(new Error(`Bulk delete failed: ${tx.error}`));
+    tx.onerror    = () => reject(new Error(`Bulk photo delete failed: ${tx.error}`));
   });
 }
 
-/**
- * Export ALL photos as a plain object { [id]: dataUrl }.
- * Used by the backup system to include photos in exports.
- * @returns {Promise<Object>}
- */
 export async function exportAllPhotos() {
-  const db = await openDB();
-
-  return new Promise((resolve, reject) => {
-    const result = {};
-    const tx     = db.transaction(STORE_NAME, "readonly");
-    const store  = tx.objectStore(STORE_NAME);
-    const cursor = store.openCursor();
-
-    cursor.onsuccess = (e) => {
-      const c = e.target.result;
-      if (c) {
-        result[c.value.id] = c.value.dataUrl;
-        c.continue();
-      } else {
-        resolve(result);
-      }
-    };
-
-    cursor.onerror = () => reject(new Error(`Export cursor failed: ${cursor.error}`));
-  });
+  return exportStore(PHOTO_STORE);
 }
 
-/**
- * Import photos from a backup object { [id]: dataUrl }.
- * Existing photos with the same ID are overwritten.
- * @param {Object} photosObj
- */
 export async function importAllPhotos(photosObj) {
-  if (!photosObj || typeof photosObj !== "object") return;
-  const db = await openDB();
+  return importStore(
+    PHOTO_STORE,
+    photosObj,
+    (id, dataUrl) => ({ id, dataUrl, savedAt: new Date().toISOString() })
+  );
+}
 
-  return new Promise((resolve, reject) => {
-    const tx    = db.transaction(STORE_NAME, "readwrite");
-    const store = tx.objectStore(STORE_NAME);
+// ════════════════════════════════════════════════════════════════
+// LOGOS
+// ════════════════════════════════════════════════════════════════
 
-    Object.entries(photosObj).forEach(([id, dataUrl]) => {
-      if (id && dataUrl) {
-        store.put({ id, dataUrl, savedAt: new Date().toISOString() });
-      }
-    });
+/** Stable key for a team logo: "logo_Chicago Cubs" */
+export function buildLogoId(teamName) {
+  if (!teamName) return null;
+  return `logo_${teamName}`;
+}
 
-    tx.oncomplete = () => resolve();
-    tx.onerror    = () => reject(new Error(`Import failed: ${tx.error}`));
-  });
+export async function saveLogo(teamName, dataUrl) {
+  const id = buildLogoId(teamName);
+  if (!id || !dataUrl) return;
+  await withStore(LOGO_STORE, "readwrite", store =>
+    store.put({ id, teamName, dataUrl, savedAt: new Date().toISOString() })
+  );
+}
+
+export async function getLogo(teamName) {
+  const id = buildLogoId(teamName);
+  if (!id) return null;
+  try {
+    const result = await withStore(LOGO_STORE, "readonly", store => store.get(id));
+    return result?.dataUrl ?? null;
+  } catch { return null; }
 }
 
 /**
- * Get storage stats for the photos store.
- * @returns {Promise<{ count: number, estimatedMb: string }>}
+ * Retrieve multiple logos at once.
+ * Returns Map<teamName, dataUrl>.
  */
+export async function getLogos(teamNames) {
+  if (!teamNames?.length) return new Map();
+  const db = await openDB();
+  return new Promise((resolve) => {
+    const map     = new Map();
+    const tx      = db.transaction(LOGO_STORE, "readonly");
+    const store   = tx.objectStore(LOGO_STORE);
+    let   pending = teamNames.length;
+    if (pending === 0) { resolve(map); return; }
+    teamNames.forEach(name => {
+      const id      = buildLogoId(name);
+      const req     = store.get(id);
+      req.onsuccess = () => {
+        if (req.result?.dataUrl) map.set(name, req.result.dataUrl);
+        if (--pending === 0) resolve(map);
+      };
+      req.onerror = () => { if (--pending === 0) resolve(map); };
+    });
+  });
+}
+
+export async function deleteLogo(teamName) {
+  const id = buildLogoId(teamName);
+  if (!id) return;
+  await withStore(LOGO_STORE, "readwrite", store => store.delete(id));
+}
+
+export async function exportAllLogos() {
+  return exportStore(LOGO_STORE);
+}
+
+export async function importAllLogos(logosObj) {
+  return importStore(
+    LOGO_STORE,
+    logosObj,
+    (id, dataUrl) => ({
+      id,
+      teamName: id.startsWith("logo_") ? id.slice(5) : id,
+      dataUrl,
+      savedAt: new Date().toISOString(),
+    })
+  );
+}
+
+// ════════════════════════════════════════════════════════════════
+// STATS (photos + logos combined)
+// ════════════════════════════════════════════════════════════════
+
 export async function getPhotoStorageStats() {
   const db = await openDB();
 
-  return new Promise((resolve) => {
-    let count     = 0;
-    let totalSize = 0;
-    const tx      = db.transaction(STORE_NAME, "readonly");
-    const store   = tx.objectStore(STORE_NAME);
-    const cursor  = store.openCursor();
+  async function scanStore(storeName) {
+    return new Promise((resolve) => {
+      let count = 0; let totalSize = 0;
+      const tx     = db.transaction(storeName, "readonly");
+      const store  = tx.objectStore(storeName);
+      const cursor = store.openCursor();
+      cursor.onsuccess = (e) => {
+        const c = e.target.result;
+        if (c) {
+          count++;
+          totalSize += (c.value.dataUrl?.length || 0);
+          c.continue();
+        } else {
+          resolve({ count, totalSize });
+        }
+      };
+      cursor.onerror = () => resolve({ count: 0, totalSize: 0 });
+    });
+  }
 
-    cursor.onsuccess = (e) => {
-      const c = e.target.result;
-      if (c) {
-        count++;
-        totalSize += (c.value.dataUrl?.length || 0);
-        c.continue();
-      } else {
-        resolve({
-          count,
-          estimatedMb: (totalSize / 1024 / 1024).toFixed(1),
-        });
-      }
-    };
+  const [photos, logos] = await Promise.all([
+    scanStore(PHOTO_STORE),
+    scanStore(LOGO_STORE),
+  ]);
 
-    cursor.onerror = () => resolve({ count: 0, estimatedMb: "0" });
-  });
+  const totalSize = photos.totalSize + logos.totalSize;
+
+  return {
+    photoCount:  photos.count,
+    logoCount:   logos.count,
+    count:       photos.count,   // backward compat
+    estimatedMb: (totalSize / 1024 / 1024).toFixed(1),
+    photosMb:    (photos.totalSize / 1024 / 1024).toFixed(1),
+    logosMb:     (logos.totalSize  / 1024 / 1024).toFixed(1),
+  };
 }
 
+// ════════════════════════════════════════════════════════════════
+// MIGRATION
+// ════════════════════════════════════════════════════════════════
+
 /**
- * Migrate photos OUT of localStorage trip/game objects INTO IndexedDB.
- * Safe to call on every app load — already-migrated photos are no-ops.
+ * One-time migration:
+ *   - Photos embedded in localStorage trip/game objects → IDB photos store
+ *   - Logo dataUrls embedded in localStorage game objects → IDB logos store
  *
- * After migration, the dataUrl fields are removed from the localStorage
- * objects and replaced with a flag: { ..., dataUrl: null, _migratedToIDB: true }
- *
- * @returns {Promise<{ migrated: number }>}
+ * Safe to call on every app load — already-migrated entries are no-ops.
  */
 export async function migratePhotosFromLocalStorage() {
   const TRIP_KEY  = "road_trip_memories_v1";
   const GAMES_KEY = "sports_games_v1";
-  let migrated    = 0;
+  let migratedPhotos = 0;
+  let migratedLogos  = 0;
 
-  // ── Helper: process a photo array ─────────────────────────────
   async function processPhotos(photos) {
     if (!photos?.length) return photos;
     const updated = [];
     for (const photo of photos) {
       if (photo.dataUrl && !photo._migratedToIDB) {
         await savePhoto(photo.id, photo.dataUrl);
-        migrated++;
+        migratedPhotos++;
         updated.push({ ...photo, dataUrl: null, _migratedToIDB: true });
       } else {
         updated.push(photo);
@@ -263,12 +311,24 @@ export async function migratePhotosFromLocalStorage() {
     return updated;
   }
 
-  // ── Migrate trips ──────────────────────────────────────────────
+  async function processLogo(teamName, logoValue) {
+    if (!logoValue || !teamName) return null;
+    // Already stripped (null) — nothing to do
+    if (logoValue === null) return null;
+    // CDN URL — not embedded yet, leave as-is (TeamPicker will embed on next select)
+    if (!logoValue.startsWith("data:")) return logoValue;
+    // Base64 still in localStorage — move it
+    await saveLogo(teamName, logoValue);
+    migratedLogos++;
+    return null; // strip from game object
+  }
+
+  // ── Trips ──────────────────────────────────────────────────────
   try {
     const raw = localStorage.getItem(TRIP_KEY);
     if (raw) {
       const trips   = JSON.parse(raw);
-      let changed   = false;
+      let   changed = false;
       const updated = await Promise.all(
         trips.map(async trip => {
           const tripPhotos = await processPhotos(trip.photos);
@@ -291,17 +351,30 @@ export async function migratePhotosFromLocalStorage() {
     console.warn("[photoStorage] Trip migration failed:", err.message);
   }
 
-  // ── Migrate games ──────────────────────────────────────────────
+  // ── Games (photos + logos) ─────────────────────────────────────
   try {
     const raw = localStorage.getItem(GAMES_KEY);
     if (raw) {
       const games   = JSON.parse(raw);
-      let changed   = false;
+      let   changed = false;
       const updated = await Promise.all(
         games.map(async game => {
-          const gamePhotos = await processPhotos(game.photos);
-          if (gamePhotos !== game.photos) changed = true;
-          return { ...game, photos: gamePhotos };
+          const gamePhotos  = await processPhotos(game.photos);
+          const newHomeLogo = await processLogo(game.homeTeam,     game.homeTeamLogo);
+          const newVisLogo  = await processLogo(game.visitingTeam, game.visitingTeamLogo);
+
+          if (
+            gamePhotos !== game.photos ||
+            newHomeLogo !== game.homeTeamLogo ||
+            newVisLogo  !== game.visitingTeamLogo
+          ) changed = true;
+
+          return {
+            ...game,
+            photos:           gamePhotos,
+            homeTeamLogo:     newHomeLogo,
+            visitingTeamLogo: newVisLogo,
+          };
         })
       );
       if (changed) localStorage.setItem(GAMES_KEY, JSON.stringify(updated));
@@ -310,11 +383,11 @@ export async function migratePhotosFromLocalStorage() {
     console.warn("[photoStorage] Games migration failed:", err.message);
   }
 
-  if (migrated > 0) {
-    console.log(`[photoStorage] Migrated ${migrated} photos from localStorage → IndexedDB`);
+  if (migratedPhotos > 0 || migratedLogos > 0) {
+    console.log(`[photoStorage] Migrated ${migratedPhotos} photos + ${migratedLogos} logos → IndexedDB`);
   } else {
-    console.log("[photoStorage] No photos needed migration");
+    console.log("[photoStorage] Nothing needed migration");
   }
 
-  return { migrated };
+  return { migratedPhotos, migratedLogos };
 }

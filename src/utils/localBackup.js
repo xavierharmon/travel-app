@@ -1,27 +1,18 @@
 // src/utils/localBackup.js
 //
-// Updated to include IndexedDB photos in exports and restore them on import.
-// The backup file format is unchanged except for an added "photos" key:
-//
+// Backup format version 2:
 //   {
 //     version:    2,
 //     exportedAt: "...",
-//     appName:    "...",
-//     data: {
-//       road_trip_memories_v1: [...],   // metadata only, no dataUrls
-//       sports_games_v1:       [...],
-//       ...
-//     },
-//     photos: {                          // NEW — from IndexedDB
-//       "photo_abc123": "data:image/jpeg;base64,...",
-//       ...
-//     }
+//     data:       { ...localStorage keys (metadata only)... },
+//     photos:     { [photoId]: dataUrl },   ← from IDB photos store
+//     logos:      { [logoId]:  dataUrl },   ← from IDB logos store
 //   }
-//
-// Version 1 backups (with dataUrls embedded in data) are still importable
-// — the import function detects them and routes photos correctly.
 
-import { exportAllPhotos, importAllPhotos } from "@/utils/photoStorage";
+import {
+  exportAllPhotos, importAllPhotos,
+  exportAllLogos,  importAllLogos,
+} from "@/utils/photoStorage";
 
 const BACKUP_KEYS = [
   "road_trip_memories_v1",
@@ -30,26 +21,25 @@ const BACKUP_KEYS = [
   "sports_games_v1",
 ];
 
-// ── Export ───────────────────────────────────────────────────────
 export async function exportToFile() {
-  // Collect localStorage metadata
   const data = {};
   BACKUP_KEYS.forEach(key => {
     const val = localStorage.getItem(key);
-    if (val) {
-      try { data[key] = JSON.parse(val); } catch { /* skip */ }
-    }
+    if (val) { try { data[key] = JSON.parse(val); } catch { /* skip */ } }
   });
 
-  // Collect ALL photos from IndexedDB
-  const photos = await exportAllPhotos();
+  const [photos, logos] = await Promise.all([
+    exportAllPhotos(),
+    exportAllLogos(),
+  ]);
 
   const payload = JSON.stringify({
     version:    2,
     exportedAt: new Date().toISOString(),
     appName:    "Xavier & Kylie's Adventures",
     data,
-    photos,     // { [photoId]: dataUrl }
+    photos,
+    logos,
   }, null, 2);
 
   const blob = new Blob([payload], { type: "application/json" });
@@ -61,7 +51,6 @@ export async function exportToFile() {
   URL.revokeObjectURL(url);
 }
 
-// ── Import ───────────────────────────────────────────────────────
 export function importFromFile(file) {
   return new Promise((resolve, reject) => {
     const reader   = new FileReader();
@@ -71,7 +60,6 @@ export function importFromFile(file) {
         const backup = JSON.parse(e.target.result);
         if (!backup?.data) throw new Error("This doesn't look like a valid backup file.");
 
-        // ── Restore localStorage keys ──────────────────────────
         let restored = 0;
         Object.entries(backup.data).forEach(([key, value]) => {
           if (BACKUP_KEYS.includes(key)) {
@@ -80,14 +68,15 @@ export function importFromFile(file) {
           }
         });
 
-        // ── Restore photos ─────────────────────────────────────
-        if (backup.photos && typeof backup.photos === "object") {
-          // Version 2: photos are in the top-level "photos" key
-          await importAllPhotos(backup.photos);
-        } else if (backup.version === 1 || !backup.version) {
-          // Version 1: dataUrls were embedded inside trip/game objects
-          // Extract and migrate them into IndexedDB
-          await _extractAndImportLegacyPhotos(backup.data);
+        // Restore photos and logos to IDB in parallel
+        await Promise.all([
+          backup.photos ? importAllPhotos(backup.photos) : Promise.resolve(),
+          backup.logos  ? importAllLogos(backup.logos)   : Promise.resolve(),
+        ]);
+
+        // Legacy v1: extract embedded dataUrls from the data objects
+        if (!backup.photos && !backup.logos) {
+          await _extractLegacyData(backup.data);
         }
 
         resolve({ success: true, exportedAt: backup.exportedAt, restored });
@@ -99,13 +88,12 @@ export function importFromFile(file) {
   });
 }
 
-// ── Legacy v1 photo extractor ────────────────────────────────────
-// Walks the old data format, pulls out any dataUrl fields,
-// saves them to IndexedDB, and strips them from the stored objects.
-async function _extractAndImportLegacyPhotos(data) {
+// ── Legacy v1 extractor ──────────────────────────────────────────
+async function _extractLegacyData(data) {
+  const { importAllPhotos, importAllLogos, saveLogo } = await import("@/utils/photoStorage");
   const photosToImport = {};
 
-  function extractFromArray(items) {
+  function extractPhotos(items) {
     return (items || []).map(item => {
       const updated = { ...item };
       if (item.photos) {
@@ -121,63 +109,56 @@ async function _extractAndImportLegacyPhotos(data) {
     });
   }
 
-  // Extract from trips (including stop photos)
   if (data["road_trip_memories_v1"]) {
-    const trips = extractFromArray(data["road_trip_memories_v1"]).map(trip => ({
-      ...trip,
-      stops: extractFromArray(trip.stops || []),
+    const trips = extractPhotos(data["road_trip_memories_v1"]).map(t => ({
+      ...t, stops: extractPhotos(t.stops || []),
     }));
     localStorage.setItem("road_trip_memories_v1", JSON.stringify(trips));
   }
 
-  // Extract from games
+  const logosToImport = {};
   if (data["sports_games_v1"]) {
-    const games = extractFromArray(data["sports_games_v1"]);
+    const games = extractPhotos(data["sports_games_v1"]).map(game => {
+      const updated = { ...game };
+      if (game.homeTeamLogo?.startsWith("data:")) {
+        logosToImport[`logo_${game.homeTeam}`] = game.homeTeamLogo;
+        updated.homeTeamLogo = null;
+      }
+      if (game.visitingTeamLogo?.startsWith("data:")) {
+        logosToImport[`logo_${game.visitingTeam}`] = game.visitingTeamLogo;
+        updated.visitingTeamLogo = null;
+      }
+      return updated;
+    });
     localStorage.setItem("sports_games_v1", JSON.stringify(games));
   }
 
-  if (Object.keys(photosToImport).length > 0) {
-    await importAllPhotos(photosToImport);
-    console.log(`[localBackup] Imported ${Object.keys(photosToImport).length} legacy photos into IndexedDB`);
-  }
+  await Promise.all([
+    Object.keys(photosToImport).length > 0 ? importAllPhotos(photosToImport) : Promise.resolve(),
+    Object.keys(logosToImport).length  > 0 ? importAllLogos(logosToImport)   : Promise.resolve(),
+  ]);
 }
 
-// ── Summary (unchanged) ──────────────────────────────────────────
 export function getBackupSummary() {
-  let trips  = 0;
-  let games  = 0;
-  let photos = 0;
+  let trips = 0, games = 0, photos = 0;
 
   try {
-    const tripsRaw = localStorage.getItem("road_trip_memories_v1");
-    if (tripsRaw) {
-      const arr = JSON.parse(tripsRaw);
-      trips  = arr.length;
-      photos = arr.reduce((sum, t) => {
-        const tripPhotos = (t.photos || []).length;
-        const stopPhotos = (t.stops || []).reduce((s, stop) => s + (stop.photos || []).length, 0);
-        return sum + tripPhotos + stopPhotos;
-      }, 0);
-    }
+    const arr = JSON.parse(localStorage.getItem("road_trip_memories_v1") || "[]");
+    trips  = arr.length;
+    photos = arr.reduce((sum, t) => {
+      return sum + (t.photos || []).length +
+        (t.stops || []).reduce((s, stop) => s + (stop.photos || []).length, 0);
+    }, 0);
   } catch { /* ignore */ }
 
   try {
-    const gamesRaw = localStorage.getItem("sports_games_v1");
-    if (gamesRaw) {
-      const arr = JSON.parse(gamesRaw);
-      games   = arr.length;
-      photos += arr.reduce((sum, g) => sum + (g.photos || []).length, 0);
-    }
+    const arr = JSON.parse(localStorage.getItem("sports_games_v1") || "[]");
+    games   = arr.length;
+    photos += arr.reduce((sum, g) => sum + (g.photos || []).length, 0);
   } catch { /* ignore */ }
 
-  const totalBytes = BACKUP_KEYS.reduce((sum, key) => {
-    return sum + (localStorage.getItem(key) || "").length;
-  }, 0);
+  const totalBytes = BACKUP_KEYS.reduce((sum, key) =>
+    sum + (localStorage.getItem(key) || "").length, 0);
 
-  return {
-    trips,
-    games,
-    photos,
-    sizeMb: (totalBytes / 1024 / 1024).toFixed(2),
-  };
+  return { trips, games, photos, sizeMb: (totalBytes / 1024 / 1024).toFixed(2) };
 }

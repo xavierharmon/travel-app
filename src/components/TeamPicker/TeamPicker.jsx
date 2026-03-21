@@ -1,13 +1,23 @@
 // src/components/TeamPicker/TeamPicker.jsx
 //
-// When a team is selected from the dropdown, the logo is fetched from
-// the ESPN CDN and converted to a base64 data URL immediately. This means
-// the logo gets stored in localStorage and backups just like uploaded photos
-// — no CDN dependency after the first selection.
+// Updated logo handling:
+//   - On select: logo is fetched from ESPN CDN, converted to base64,
+//     saved to IndexedDB via saveLogo(teamName, dataUrl), then
+//     onChange is called with logo: null (no base64 on game object).
+//   - On render: logo is loaded from IndexedDB via getLogo(teamName)
+//     and held in local state for display only.
+//
+// The game object stored in context/localStorage now has:
+//   homeTeamLogo: null     ← always null, IDB is the source of truth
+//   visitingTeamLogo: null
+//
+// Display components (GameCard, GameEditorPage, GameFallbackCard)
+// load logos from IDB via the useLogoUrls hook.
 
 import { useState, useRef, useEffect } from "react";
 import styles from "./TeamPicker.module.css";
 import { getTeamsForSport } from "@/data/teams";
+import { saveLogo, getLogo } from "@/utils/photoStorage";
 
 function InitialsAvatar({ name, size = 36 }) {
   const initials = name
@@ -39,37 +49,43 @@ function LevelPill({ level }) {
   );
 }
 
-// Fetch logo from CDN and convert to base64 so it is stored locally.
-// Falls back to the original URL if offline or fetch fails.
-async function embedLogo(url) {
-  if (!url) return null;
+// Fetch logo from CDN and convert to base64, then save to IDB
+async function fetchAndStoreLogo(teamName, cdnUrl) {
+  if (!cdnUrl || !teamName) return null;
   try {
-    const res  = await fetch(url);
-    if (!res.ok) return url;
+    const res  = await fetch(cdnUrl);
+    if (!res.ok) return null;
     const blob = await res.blob();
-    return await new Promise(resolve => {
+    const dataUrl = await new Promise(resolve => {
       const reader   = new FileReader();
       reader.onload  = e => resolve(e.target.result);
-      reader.onerror = () => resolve(url);
+      reader.onerror = () => resolve(null);
       reader.readAsDataURL(blob);
     });
+    if (dataUrl) await saveLogo(teamName, dataUrl);
+    return dataUrl;
   } catch {
-    return url;
+    return null;
   }
 }
 
-export default function TeamPicker({ sport, value, logo, onChange, label, placeholder }) {
-  const [query,     setQuery]     = useState(value || "");
-  const [open,      setOpen]      = useState(false);
-  const [imgError,  setImgError]  = useState(false);
-  const [embedding, setEmbedding] = useState(false);
-  const containerRef              = useRef(null);
-  const inputRef                  = useRef(null);
+export default function TeamPicker({ sport, value, onChange, label, placeholder }) {
+  const [query,        setQuery]        = useState(value || "");
+  const [open,         setOpen]         = useState(false);
+  const [displayLogo,  setDisplayLogo]  = useState(null); // dataUrl for display only
+  const [embedding,    setEmbedding]    = useState(false);
+  const containerRef                    = useRef(null);
+  const inputRef                        = useRef(null);
 
   const teams    = getTeamsForSport(sport);
   const hasTeams = teams.length > 0;
 
-  useEffect(() => { setQuery(value || ""); setImgError(false); }, [value]);
+  // Load logo from IDB whenever the team name (value) changes
+  useEffect(() => {
+    setQuery(value || "");
+    if (!value) { setDisplayLogo(null); return; }
+    getLogo(value).then(url => setDisplayLogo(url || null));
+  }, [value]);
 
   useEffect(() => {
     function handleClick(e) {
@@ -88,36 +104,47 @@ export default function TeamPicker({ sport, value, logo, onChange, label, placeh
     setQuery(val);
     setOpen(true);
     const exact = teams.find(t => t.name.toLowerCase() === val.toLowerCase());
-    if (exact) { onChange({ name: exact.name, logo: exact.logo }); setImgError(false); }
-    else        { onChange({ name: val, logo: null }); }
+    if (exact) {
+      onChange({ name: exact.name, logo: null }); // logo: null — stored in IDB
+    } else {
+      onChange({ name: val, logo: null });
+    }
   }
 
   async function handleSelect(team) {
     setQuery(team.name);
     setOpen(false);
-    setImgError(false);
     inputRef.current?.blur();
-    // Emit immediately with CDN URL so the UI feels instant
-    onChange({ name: team.name, logo: team.logo });
-    // Then replace with embedded base64 in the background
+
+    // Tell parent immediately — no logo on the object
+    onChange({ name: team.name, logo: null });
+
     if (team.logo) {
-      setEmbedding(true);
-      const embedded = await embedLogo(team.logo);
-      setEmbedding(false);
-      if (embedded && embedded !== team.logo) {
-        onChange({ name: team.name, logo: embedded });
+      // Check IDB first — might already be stored from a previous selection
+      const cached = await getLogo(team.name);
+      if (cached) {
+        setDisplayLogo(cached);
+        return;
       }
+
+      // Not cached — fetch from CDN and store
+      setEmbedding(true);
+      const dataUrl = await fetchAndStoreLogo(team.name, team.logo);
+      setEmbedding(false);
+      if (dataUrl) setDisplayLogo(dataUrl);
+    } else {
+      setDisplayLogo(null);
     }
   }
 
   function handleClearLogo() {
+    setDisplayLogo(null);
     onChange({ name: value, logo: null });
-    setImgError(false);
   }
 
   const showDropdown = open && hasTeams && filtered.length > 0;
-  const showLogo     = logo && !imgError;
-  const showInitials = !showLogo && value;
+  const showLogo     = !!displayLogo;
+  const showInitials = !showLogo && !!value;
 
   return (
     <div className={styles.wrap} ref={containerRef}>
@@ -128,12 +155,11 @@ export default function TeamPicker({ sport, value, logo, onChange, label, placeh
           {showLogo ? (
             <div className={styles.logoThumb}>
               <img
-                src={logo}
+                src={displayLogo}
                 alt=""
                 className={`${styles.logoImg} ${embedding ? styles.logoEmbedding : ""}`}
-                onError={() => setImgError(true)}
               />
-              {embedding && <div className={styles.embeddingSpinner} title="Saving logo..." />}
+              {embedding && <div className={styles.embeddingSpinner} title="Saving logo…" />}
               <button className={styles.logoClear} onClick={handleClearLogo} title="Remove logo" type="button">
                 x
               </button>
@@ -151,7 +177,7 @@ export default function TeamPicker({ sport, value, logo, onChange, label, placeh
           value={query}
           onChange={handleInputChange}
           onFocus={() => setOpen(true)}
-          placeholder={hasTeams ? `${placeholder} (or search...)` : placeholder}
+          placeholder={hasTeams ? `${placeholder} (or search…)` : placeholder}
           autoComplete="off"
         />
       </div>
@@ -167,7 +193,8 @@ export default function TeamPicker({ sport, value, logo, onChange, label, placeh
                 type="button"
               >
                 {team.logo
-                  ? <img src={team.logo} alt="" className={styles.optionLogo} onError={e => { e.target.style.display = "none"; e.target.nextSibling.style.display = "flex"; }} />
+                  ? <img src={team.logo} alt="" className={styles.optionLogo}
+                      onError={e => { e.target.style.display = "none"; }} />
                   : null
                 }
                 <div className={styles.optionInitials} style={{ display: team.logo ? "none" : "flex" }}>
@@ -180,7 +207,7 @@ export default function TeamPicker({ sport, value, logo, onChange, label, placeh
                     {team.affiliate && <span className={styles.affiliateTag}>{team.affiliate}</span>}
                   </div>
                 </div>
-                {value === team.name && <span className={styles.optionCheck}>checkmark</span>}
+                {value === team.name && <span className={styles.optionCheck}>✓</span>}
               </button>
             ))}
           </div>
@@ -188,7 +215,7 @@ export default function TeamPicker({ sport, value, logo, onChange, label, placeh
       )}
 
       {!hasTeams && (
-        <p className={styles.noTeamsHint}>No preset teams for this sport - type any team name above.</p>
+        <p className={styles.noTeamsHint}>No preset teams for this sport — type any team name above.</p>
       )}
     </div>
   );

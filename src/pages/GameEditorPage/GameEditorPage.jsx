@@ -1,9 +1,4 @@
-// src/pages/GameEditorPage/GameEditorPage.jsx  (updated scoreboard section)
-//
-// Replace the existing TeamLogoUploader + teamNameInput blocks in the
-// scoreboard card with TeamPicker. Only the scoreboard section changes —
-// all other sections (Details, Photos, bottom save) stay identical.
-
+// src/pages/GameEditorPage/GameEditorPage.jsx
 import { useState } from "react";
 import styles from "./GameEditorPage.module.css";
 import { useGames } from "@/context/GamesContext";
@@ -11,8 +6,8 @@ import { generateId } from "@/utils/imageHelpers";
 import Button from "@/components/common/Button";
 import PhotoGrid from "@/components/common/PhotoGrid";
 import TeamPicker from "@/components/TeamPicker";
+import { useLogoUrls } from "@/hooks/useLogoUrls";
 
-// ── Score input (unchanged) ──────────────────────────────────────
 function ScoreInput({ value, onChange, label }) {
   return (
     <div className={styles.scoreField}>
@@ -29,7 +24,6 @@ function ScoreInput({ value, onChange, label }) {
   );
 }
 
-// ── Main page ────────────────────────────────────────────────────
 export default function GameEditorPage({ game, onBack }) {
   const { addGame, updateGame } = useGames();
   const isNew = !game?.id;
@@ -37,26 +31,22 @@ export default function GameEditorPage({ game, onBack }) {
   const [form, setForm] = useState(() => {
     if (!game) {
       return {
-        id:               null,
-        date:             new Date().toISOString().slice(0, 10),
-        sport:            "",
-        homeTeam:         "",
-        homeTeamLogo:     null,
-        homeScore:        null,
-        visitingTeam:     "",
-        visitingTeamLogo: null,
-        visitingScore:    null,
-        venue:            "",
-        city:             "",
-        description:      "",
-        outcome:          "win",
-        photos:           [],
+        id: null, date: new Date().toISOString().slice(0, 10),
+        sport: "", homeTeam: "", homeTeamLogo: null,
+        homeScore: null, visitingTeam: "", visitingTeamLogo: null,
+        visitingScore: null, venue: "", city: "",
+        description: "", outcome: "win", photos: [],
       };
     }
     return { ...game };
   });
 
   const [errors, setErrors] = useState({});
+
+  // Load logos for display from IDB — logos are NOT on the form object
+  const logoMap = useLogoUrls([form.homeTeam, form.visitingTeam]);
+  const homeLogoUrl     = logoMap.get(form.homeTeam)     || null;
+  const visitingLogoUrl = logoMap.get(form.visitingTeam) || null;
 
   function set(field, value) {
     setForm(prev => ({ ...prev, [field]: value }));
@@ -72,10 +62,12 @@ export default function GameEditorPage({ game, onBack }) {
 
   function handleSave() {
     if (!validate()) return;
+    // Ensure logos are always null on the saved object — IDB is source of truth
+    const toSave = { ...form, homeTeamLogo: null, visitingTeamLogo: null };
     if (isNew) {
-      addGame({ ...form, id: generateId() });
+      addGame({ ...toSave, id: generateId() });
     } else {
-      updateGame({ ...form });
+      updateGame({ ...toSave });
     }
     onBack();
   }
@@ -94,7 +86,6 @@ export default function GameEditorPage({ game, onBack }) {
     <div className={styles.page}>
       <div className={styles.inner}>
 
-        {/* Top bar */}
         <div className={styles.topBar}>
           <Button variant="ghost" onClick={onBack}>← Back</Button>
           <Button variant="primary" onClick={handleSave}>
@@ -102,11 +93,9 @@ export default function GameEditorPage({ game, onBack }) {
           </Button>
         </div>
 
-        <h2 className={styles.pageTitle}>
-          {isNew ? "Log a Game" : "Edit Game"}
-        </h2>
+        <h2 className={styles.pageTitle}>{isNew ? "Log a Game" : "Edit Game"}</h2>
 
-        {/* ── Scoreboard ────────────────────────── */}
+        {/* ── Scoreboard ─────────────────────────── */}
         <section className={styles.section}>
           <h3 className={styles.sectionTitle}>Scoreboard</h3>
 
@@ -116,21 +105,13 @@ export default function GameEditorPage({ game, onBack }) {
               <TeamPicker
                 sport={form.sport}
                 value={form.homeTeam}
-                logo={form.homeTeamLogo}
+                logo={homeLogoUrl}       
                 label="Home"
                 placeholder="Home Team"
-                onChange={({ name, logo }) => setForm(prev => ({
-                  ...prev,
-                  homeTeam:     name,
-                  homeTeamLogo: logo ?? prev.homeTeamLogo,
-                }))}
+                onChange={({ name }) => set("homeTeam", name)}
               />
               {errors.homeTeam && <p className={styles.errorText}>{errors.homeTeam}</p>}
-              <ScoreInput
-                value={form.homeScore}
-                onChange={v => handleScoreChange("home", v)}
-                label="Score"
-              />
+              <ScoreInput value={form.homeScore} onChange={v => handleScoreChange("home", v)} label="Score" />
             </div>
 
             {/* VS divider */}
@@ -155,97 +136,61 @@ export default function GameEditorPage({ game, onBack }) {
               <TeamPicker
                 sport={form.sport}
                 value={form.visitingTeam}
-                logo={form.visitingTeamLogo}
+                logo={visitingLogoUrl}   
                 label="Visitor"
                 placeholder="Visiting Team"
-                onChange={({ name, logo }) => setForm(prev => ({
-                  ...prev,
-                  visitingTeam:     name,
-                  visitingTeamLogo: logo ?? prev.visitingTeamLogo,
-                }))}
+                onChange={({ name }) => set("visitingTeam", name)}
               />
               {errors.visitingTeam && <p className={styles.errorText}>{errors.visitingTeam}</p>}
-              <ScoreInput
-                value={form.visitingScore}
-                onChange={v => handleScoreChange("visiting", v)}
-                label="Score"
-              />
+              <ScoreInput value={form.visitingScore} onChange={v => handleScoreChange("visiting", v)} label="Score" />
             </div>
           </div>
         </section>
 
-        {/* ── Game Details ───────────────────────── */}
+        {/* ── Details ────────────────────────────── */}
         <section className={styles.section}>
           <h3 className={styles.sectionTitle}>Details</h3>
 
           <div className={styles.fieldsGrid}>
             <div className={styles.field}>
               <label className={styles.label}>Date</label>
-              <input
-                type="date"
-                className={styles.input}
-                value={form.date || ""}
-                onChange={e => set("date", e.target.value)}
-              />
+              <input type="date" className={styles.input} value={form.date || ""}
+                onChange={e => set("date", e.target.value)} />
             </div>
-
             <div className={styles.field}>
               <label className={styles.label}>Sport</label>
-              <input
-                className={styles.input}
-                value={form.sport || ""}
+              <input className={styles.input} value={form.sport || ""}
                 onChange={e => set("sport", e.target.value)}
-                placeholder="e.g. Baseball, Hockey…"
-                list="sports-list"
-              />
+                placeholder="e.g. Baseball, Hockey…" list="sports-list" />
               <datalist id="sports-list">
-                {["Baseball", "Hockey", "College", "Basketball",
-                  "Football", "Soccer", "Tennis", "MiLB"].map(s => (
-                  <option key={s} value={s} />
-                ))}
+                {["Baseball","Hockey","College","Basketball","Football","Soccer","Tennis","MiLB"]
+                  .map(s => <option key={s} value={s} />)}
               </datalist>
             </div>
-
             <div className={styles.field}>
               <label className={styles.label}>Venue / Stadium</label>
-              <input
-                className={styles.input}
-                value={form.venue || ""}
-                onChange={e => set("venue", e.target.value)}
-                placeholder="e.g. Wrigley Field"
-              />
+              <input className={styles.input} value={form.venue || ""}
+                onChange={e => set("venue", e.target.value)} placeholder="e.g. Wrigley Field" />
             </div>
-
             <div className={styles.field}>
               <label className={styles.label}>City</label>
-              <input
-                className={styles.input}
-                value={form.city || ""}
-                onChange={e => set("city", e.target.value)}
-                placeholder="e.g. Chicago, IL"
-              />
+              <input className={styles.input} value={form.city || ""}
+                onChange={e => set("city", e.target.value)} placeholder="e.g. Chicago, IL" />
             </div>
           </div>
 
           <div className={styles.field} style={{ marginTop: "var(--space-md)" }}>
             <label className={styles.label}>Notes & Memories</label>
-            <textarea
-              className={styles.textarea}
-              value={form.description || ""}
+            <textarea className={styles.textarea} value={form.description || ""}
               onChange={e => set("description", e.target.value)}
-              placeholder="What made this game special?"
-              rows={4}
-            />
+              placeholder="What made this game special?" rows={4} />
           </div>
         </section>
 
-        {/* ── Game Photos ────────────────────────── */}
+        {/* ── Photos ─────────────────────────────── */}
         <section className={styles.section}>
           <h3 className={styles.sectionTitle}>Photos</h3>
-          <PhotoGrid
-            photos={form.photos || []}
-            onChange={photos => set("photos", photos)}
-          />
+          <PhotoGrid photos={form.photos || []} onChange={photos => set("photos", photos)} />
         </section>
 
         <div className={styles.bottomActions}>

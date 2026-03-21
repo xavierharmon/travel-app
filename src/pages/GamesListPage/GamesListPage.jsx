@@ -4,8 +4,8 @@ import styles from "./GamesListPage.module.css";
 import { useGames } from "@/context/GamesContext";
 import Button from "@/components/common/Button";
 import { usePhotoUrls } from "@/hooks/usePhotoUrls";
+import { useLogoUrls } from "@/hooks/useLogoUrls";
 
-// ── Win/Loss record banner ───────────────────────────────────────
 function RecordBanner({ games }) {
   const wins   = games.filter(g => g.outcome === "win").length;
   const losses = games.filter(g => g.outcome === "loss").length;
@@ -19,12 +19,10 @@ function RecordBanner({ games }) {
         <span className={styles.recordWins}>{wins}W</span>
         <span className={styles.recordDash}>–</span>
         <span className={styles.recordLosses}>{losses}L</span>
-        {ties > 0 && (
-          <>
-            <span className={styles.recordDash}>–</span>
-            <span className={styles.recordTies}>{ties}T</span>
-          </>
-        )}
+        {ties > 0 && (<>
+          <span className={styles.recordDash}>–</span>
+          <span className={styles.recordTies}>{ties}T</span>
+        </>)}
       </div>
       <div className={styles.recordMeta}>
         <span className={styles.recordTotal}>{total} game{total !== 1 ? "s" : ""} attended</span>
@@ -41,7 +39,6 @@ function RecordBanner({ games }) {
   );
 }
 
-// ── Individual game card ─────────────────────────────────────────
 function GameCard({ game, onEdit, onDelete }) {
   const [expanded, setExpanded] = useState(false);
 
@@ -56,25 +53,24 @@ function GameCard({ game, onEdit, onDelete }) {
                      && game.homeScore !== undefined && game.visitingScore !== undefined;
   const previewPhotos = (game.photos || []).slice(0, 3);
 
-  // Load photo thumbnails from IndexedDB
+  // Load photos and logos from IDB
   const photoUrls = usePhotoUrls(previewPhotos);
+  const logoMap   = useLogoUrls([game.homeTeam, game.visitingTeam]);
+  const homeLogoUrl     = logoMap.get(game.homeTeam)     || null;
+  const visitingLogoUrl = logoMap.get(game.visitingTeam) || null;
 
   return (
     <div className={styles.gameCard} style={{ borderColor: colors.border }}>
 
-      {/* Header */}
       <div className={styles.cardHeader}>
-        <span
-          className={styles.outcomeBadge}
-          style={{ background: colors.badgeBg, color: colors.badge }}
-        >
+        <span className={styles.outcomeBadge} style={{ background: colors.badgeBg, color: colors.badge }}>
           {game.outcome?.toUpperCase() || "?"}
         </span>
 
         <div className={styles.matchup}>
           <div className={styles.matchupTeam}>
-            {game.homeTeamLogo && (
-              <img src={game.homeTeamLogo} alt={game.homeTeam} className={styles.teamLogoSmall} />
+            {homeLogoUrl && (
+              <img src={homeLogoUrl} alt={game.homeTeam} className={styles.teamLogoSmall} />
             )}
             <span className={styles.teamName}>{game.homeTeam || "Home"}</span>
           </div>
@@ -93,8 +89,8 @@ function GameCard({ game, onEdit, onDelete }) {
 
           <div className={`${styles.matchupTeam} ${styles.matchupTeamRight}`}>
             <span className={styles.teamName}>{game.visitingTeam || "Visitor"}</span>
-            {game.visitingTeamLogo && (
-              <img src={game.visitingTeamLogo} alt={game.visitingTeam} className={styles.teamLogoSmall} />
+            {visitingLogoUrl && (
+              <img src={visitingLogoUrl} alt={game.visitingTeam} className={styles.teamLogoSmall} />
             )}
           </div>
         </div>
@@ -105,7 +101,6 @@ function GameCard({ game, onEdit, onDelete }) {
         </div>
       </div>
 
-      {/* Meta */}
       <div className={styles.cardMeta}>
         {game.date  && <span className={styles.metaChip}>📅 {game.date}</span>}
         {game.sport && <span className={styles.metaChip}>🏆 {game.sport}</span>}
@@ -113,7 +108,6 @@ function GameCard({ game, onEdit, onDelete }) {
         {game.city  && <span className={styles.metaChip}>📍 {game.city}</span>}
       </div>
 
-      {/* Photo strip - loaded from IndexedDB */}
       {previewPhotos.length > 0 && (
         <div className={styles.photoStrip}>
           {previewPhotos.map((photo, i) => {
@@ -131,7 +125,6 @@ function GameCard({ game, onEdit, onDelete }) {
         </div>
       )}
 
-      {/* Description */}
       {game.description && (
         <div className={styles.descRow}>
           <p className={`${styles.desc} ${expanded ? styles.descExpanded : ""}`}>
@@ -148,12 +141,11 @@ function GameCard({ game, onEdit, onDelete }) {
   );
 }
 
-// ── Main list page ───────────────────────────────────────────────
 export default function GamesListPage({ onNewGame, onEditGame, onBack }) {
   const { games, loading, deleteGame } = useGames();
-  const [sortBy,         setSortBy]        = useState("date_desc");
-  const [filterSport,    setFilterSport]   = useState("all");
-  const [filterOutcome,  setFilterOutcome] = useState("all");
+  const [sortBy,        setSortBy]        = useState("date_desc");
+  const [filterSport,   setFilterSport]   = useState("all");
+  const [filterOutcome, setFilterOutcome] = useState("all");
 
   function handleDelete(id) {
     if (window.confirm("Delete this game? This cannot be undone.")) deleteGame(id);
@@ -194,43 +186,29 @@ export default function GamesListPage({ onNewGame, onEditGame, onBack }) {
         <div className={styles.filterBar}>
           <div className={styles.filterGroup}>
             {["all", "win", "loss", "tie"].map(o => (
-              <button
-                key={o}
+              <button key={o}
                 className={`${styles.filterBtn} ${filterOutcome === o ? styles.filterBtnActive : ""}`}
-                onClick={() => setFilterOutcome(o)}
-              >
+                onClick={() => setFilterOutcome(o)}>
                 {o === "all" ? "All Results" : o.charAt(0).toUpperCase() + o.slice(1) + "s"}
               </button>
             ))}
           </div>
-
           {sports.length > 1 && (
             <div className={styles.filterGroup}>
-              <button
-                className={`${styles.filterBtn} ${filterSport === "all" ? styles.filterBtnActive : ""}`}
-                onClick={() => setFilterSport("all")}
-              >All Sports</button>
+              <button className={`${styles.filterBtn} ${filterSport === "all" ? styles.filterBtnActive : ""}`}
+                onClick={() => setFilterSport("all")}>All Sports</button>
               {sports.map(s => (
-                <button
-                  key={s}
+                <button key={s}
                   className={`${styles.filterBtn} ${filterSport === s ? styles.filterBtnActive : ""}`}
-                  onClick={() => setFilterSport(s)}
-                >
-                  {s}
-                </button>
+                  onClick={() => setFilterSport(s)}>{s}</button>
               ))}
             </div>
           )}
-
           <div className={styles.filterGroup} style={{ marginLeft: "auto" }}>
-            <button
-              className={`${styles.filterBtn} ${sortBy === "date_desc" ? styles.filterBtnActive : ""}`}
-              onClick={() => setSortBy("date_desc")}
-            >Newest</button>
-            <button
-              className={`${styles.filterBtn} ${sortBy === "date_asc" ? styles.filterBtnActive : ""}`}
-              onClick={() => setSortBy("date_asc")}
-            >Oldest</button>
+            <button className={`${styles.filterBtn} ${sortBy === "date_desc" ? styles.filterBtnActive : ""}`}
+              onClick={() => setSortBy("date_desc")}>Newest</button>
+            <button className={`${styles.filterBtn} ${sortBy === "date_asc" ? styles.filterBtnActive : ""}`}
+              onClick={() => setSortBy("date_asc")}>Oldest</button>
           </div>
         </div>
       )}

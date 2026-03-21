@@ -1,7 +1,7 @@
 // src/components/Showcase/GameFallbackCard/GameFallbackCard.jsx
 import styles from "./GameFallbackCard.module.css";
+import { useLogoUrls } from "@/hooks/useLogoUrls";
 
-// Initials avatar — mirrors the one in TeamPicker
 function InitialsAvatar({ name, size = 80 }) {
   const initials = name
     ? name.split(" ").filter(Boolean).slice(0, 2).map(w => w[0]).join("").toUpperCase()
@@ -11,10 +11,7 @@ function InitialsAvatar({ name, size = 80 }) {
     ? name.split("").reduce((acc, c) => acc + c.charCodeAt(0), 0) % colors.length
     : 0;
   return (
-    <div
-      className={styles.initialsAvatar}
-      style={{ width: size, height: size, background: colors[idx] }}
-    >
+    <div className={styles.initialsAvatar} style={{ width: size, height: size, background: colors[idx] }}>
       <span style={{ fontSize: size * 0.35 }}>{initials}</span>
     </div>
   );
@@ -28,9 +25,15 @@ const OUTCOME_STYLES = {
 
 export default function GameFallbackCard({ item }) {
   const {
-    homeTeam, visitingTeam, homeTeamLogo, visitingTeamLogo,
-    homeScore, visitingScore, outcome, date, venue, city, sport,
+    homeTeam, visitingTeam,
+    homeScore, visitingScore,
+    outcome, date, venue, city, sport,
   } = item;
+
+  // Load logos from IDB — item no longer carries dataUrls
+  const logoMap         = useLogoUrls([homeTeam, visitingTeam]);
+  const homeLogoUrl     = logoMap.get(homeTeam)     || null;
+  const visitingLogoUrl = logoMap.get(visitingTeam) || null;
 
   const outcomeStyle = OUTCOME_STYLES[outcome] || OUTCOME_STYLES.tie;
   const hasScore     = homeScore !== null && homeScore !== undefined
@@ -38,7 +41,6 @@ export default function GameFallbackCard({ item }) {
 
   return (
     <div className={styles.card}>
-      {/* Decorative background glow */}
       <div
         className={styles.glowLeft}
         style={{ background: `radial-gradient(ellipse at center, ${outcomeStyle.border}18 0%, transparent 70%)` }}
@@ -49,32 +51,24 @@ export default function GameFallbackCard({ item }) {
       />
 
       <div className={styles.content}>
-        {/* Sport label */}
-        {sport && (
-          <p className={styles.sportLabel}>{sport}</p>
-        )}
+        {sport && <p className={styles.sportLabel}>{sport}</p>}
 
-        {/* Outcome badge */}
         {outcome && (
-          <div
-            className={styles.outcomeBadge}
-            style={{
-              background:   outcomeStyle.bg,
-              border:       `1px solid ${outcomeStyle.border}`,
-              color:        outcomeStyle.color,
-            }}
-          >
+          <div className={styles.outcomeBadge} style={{
+            background: outcomeStyle.bg,
+            border:     `1px solid ${outcomeStyle.border}`,
+            color:      outcomeStyle.color,
+          }}>
             {outcomeStyle.label}
           </div>
         )}
 
-        {/* Matchup */}
         <div className={styles.matchup}>
           {/* Home team */}
           <div className={styles.teamBlock}>
             <div className={styles.logoWrap}>
-              {homeTeamLogo
-                ? <img src={homeTeamLogo} alt={homeTeam} className={styles.teamLogo} />
+              {homeLogoUrl
+                ? <img src={homeLogoUrl} alt={homeTeam} className={styles.teamLogo} />
                 : <InitialsAvatar name={homeTeam} size={96} />
               }
             </div>
@@ -87,14 +81,12 @@ export default function GameFallbackCard({ item }) {
             {hasScore ? (
               <>
                 <span className={styles.scoreNum}
-                  style={{ color: homeScore > visitingScore ? outcomeStyle.color : "var(--color-text-muted)" }}
-                >
+                  style={{ color: homeScore > visitingScore ? outcomeStyle.color : "var(--color-text-muted)" }}>
                   {homeScore}
                 </span>
                 <span className={styles.scoreDash}>–</span>
                 <span className={styles.scoreNum}
-                  style={{ color: visitingScore > homeScore ? outcomeStyle.color : "var(--color-text-muted)" }}
-                >
+                  style={{ color: visitingScore > homeScore ? outcomeStyle.color : "var(--color-text-muted)" }}>
                   {visitingScore}
                 </span>
               </>
@@ -106,8 +98,8 @@ export default function GameFallbackCard({ item }) {
           {/* Visiting team */}
           <div className={styles.teamBlock}>
             <div className={styles.logoWrap}>
-              {visitingTeamLogo
-                ? <img src={visitingTeamLogo} alt={visitingTeam} className={styles.teamLogo} />
+              {visitingLogoUrl
+                ? <img src={visitingLogoUrl} alt={visitingTeam} className={styles.teamLogo} />
                 : <InitialsAvatar name={visitingTeam} size={96} />
               }
             </div>
@@ -116,11 +108,10 @@ export default function GameFallbackCard({ item }) {
           </div>
         </div>
 
-        {/* Meta info */}
         <div className={styles.meta}>
-          {date   && <span className={styles.metaChip}>📅 {date}</span>}
-          {venue  && <span className={styles.metaChip}>🏟️ {venue}</span>}
-          {city   && <span className={styles.metaChip}>📍 {city}</span>}
+          {date  && <span className={styles.metaChip}>📅 {date}</span>}
+          {venue && <span className={styles.metaChip}>🏟️ {venue}</span>}
+          {city  && <span className={styles.metaChip}>📍 {city}</span>}
         </div>
       </div>
     </div>
