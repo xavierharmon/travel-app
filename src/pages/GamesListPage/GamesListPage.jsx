@@ -103,7 +103,13 @@ function GameCard({ game, onEdit, onDelete }) {
 
       <div className={styles.cardMeta}>
         {game.date  && <span className={styles.metaChip}>📅 {game.date}</span>}
-        {game.sport && <span className={styles.metaChip}>🏆 {game.sport}</span>}
+        {game.sport && (
+          <span className={styles.metaChip}>
+            🏆 {game.sport === "College" && game.collegeSport
+              ? `College ${game.collegeSport}`
+              : game.sport}
+          </span>
+        )}
         {game.venue && <span className={styles.metaChip}>🏟️ {game.venue}</span>}
         {game.city  && <span className={styles.metaChip}>📍 {game.city}</span>}
       </div>

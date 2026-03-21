@@ -36,6 +36,7 @@ export default function GameEditorPage({ game, onBack }) {
         homeScore: null, visitingTeam: "", visitingTeamLogo: null,
         visitingScore: null, venue: "", city: "",
         description: "", outcome: "win", photos: [],
+        collegeSport: "",   // ← add this
       };
     }
     return { ...game };
@@ -157,6 +158,7 @@ export default function GameEditorPage({ game, onBack }) {
               <input type="date" className={styles.input} value={form.date || ""}
                 onChange={e => set("date", e.target.value)} />
             </div>
+
             <div className={styles.field}>
               <label className={styles.label}>Sport</label>
               <input className={styles.input} value={form.sport || ""}
@@ -167,6 +169,31 @@ export default function GameEditorPage({ game, onBack }) {
                   .map(s => <option key={s} value={s} />)}
               </datalist>
             </div>
+
+            {/* College sub-sport picker — only visible when Sport = "College" */}
+            {form.sport === "College" && (
+              <div className={styles.field} style={{ gridColumn: "1 / -1" }}>
+                <label className={styles.label}>College Sport</label>
+                <div style={{ display: "flex", gap: "var(--space-sm)", flexWrap: "wrap" }}>
+                  {["Football", "Basketball", "Baseball"].map(s => (
+                    <button
+                      key={s}
+                      type="button"
+                      className={styles.outcomeBtn}
+                      style={form.collegeSport === s ? {
+                        background: "var(--color-primary)",
+                        borderColor: "var(--color-primary)",
+                        color: "#fff",
+                      } : {}}
+                      onClick={() => set("collegeSport", s)}
+                    >
+                      {s}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div className={styles.field}>
               <label className={styles.label}>Venue / Stadium</label>
               <input className={styles.input} value={form.venue || ""}
@@ -178,6 +205,7 @@ export default function GameEditorPage({ game, onBack }) {
                 onChange={e => set("city", e.target.value)} placeholder="e.g. Chicago, IL" />
             </div>
           </div>
+          
 
           <div className={styles.field} style={{ marginTop: "var(--space-md)" }}>
             <label className={styles.label}>Notes & Memories</label>
