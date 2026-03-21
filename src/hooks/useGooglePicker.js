@@ -27,8 +27,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 
 const CLIENT_ID  = import.meta.env.VITE_GOOGLE_CLIENT_ID      || "";
-const API_KEY    = import.meta.env.VITE_GOOGLE_PICKER_API_KEY
-               || import.meta.env.VITE_GOOGLE_MAPS_API_KEY    || "";
+const API_KEY    = import.meta.env.VITE_GOOGLE_PICKER_API_KEY || "";
 const TOKEN_KEY  = "gdrive_token_v1"; // shared with Drive backup hook
 
 // Combined scope — Drive backup + Picker file access
