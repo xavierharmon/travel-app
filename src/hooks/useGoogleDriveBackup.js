@@ -1,17 +1,16 @@
 // src/hooks/useGoogleDriveBackup.js
 //
-// Uses COMBINED_SCOPE from useGooglePicker so Drive backup and
-// the photo picker share one token from one sign-in.
-// Scope is now drive.appdata + drive.readonly (both non-sensitive).
+// Backup only — no Google Photos integration.
+// Scope: drive.appdata (hidden app folder, non-sensitive, no verification needed)
 
 import { useState, useEffect, useCallback } from "react";
 import {
   exportAllPhotos, importAllPhotos,
   exportAllLogos,  importAllLogos,
 } from "@/utils/photoStorage";
-import { COMBINED_SCOPE, saveToken, clearStoredToken } from "@/hooks/useGooglePicker";
 
 const CLIENT_ID     = import.meta.env.VITE_GOOGLE_CLIENT_ID || "";
+const SCOPE         = "https://www.googleapis.com/auth/drive.appdata";
 const BACKUP_FILE   = "adventures_backup.json";
 const TOKEN_KEY     = "gdrive_token_v1";
 const LAST_SYNC_KEY = "gdrive_last_sync_v1";
@@ -34,6 +33,17 @@ function loadToken() {
     if (Date.now() - t.savedAt > 55 * 60 * 1000) return null;
     return t.access_token;
   } catch { return null; }
+}
+
+function saveToken(access_token) {
+  localStorage.setItem(TOKEN_KEY, JSON.stringify({
+    access_token,
+    savedAt: Date.now(),
+  }));
+}
+
+function clearToken() {
+  localStorage.removeItem(TOKEN_KEY);
 }
 
 // ── Drive helpers ────────────────────────────────────────────────
@@ -92,12 +102,11 @@ async function _resumableUpload(token, jsonString, existingId) {
   const initUrl = existingId
     ? `https://www.googleapis.com/upload/drive/v3/files/${existingId}?uploadType=resumable`
     : `https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable`;
-
   const initRes = await fetch(initUrl, {
     method,
     headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
+      Authorization:           `Bearer ${token}`,
+      "Content-Type":          "application/json",
       "X-Upload-Content-Type": "application/json",
     },
     body: JSON.stringify(metadata),
@@ -105,7 +114,6 @@ async function _resumableUpload(token, jsonString, existingId) {
   if (!initRes.ok) throw new Error(`Resumable init failed: ${initRes.status}`);
   const uploadUrl = initRes.headers.get("Location");
   if (!uploadUrl) throw new Error("No upload URL from Drive");
-
   const uploadRes = await fetch(uploadUrl, {
     method:  "PUT",
     headers: { "Content-Type": "application/json" },
@@ -156,7 +164,7 @@ export function useGoogleDriveBackup() {
     if (!window.google?.accounts?.oauth2 || !CLIENT_ID) return;
     const client = window.google.accounts.oauth2.initTokenClient({
       client_id: CLIENT_ID,
-      scope:     COMBINED_SCOPE, // drive.appdata + drive.readonly
+      scope:     SCOPE,
       callback:  handleTokenResponse,
     });
     setTokenClient(client);
@@ -188,8 +196,8 @@ export function useGoogleDriveBackup() {
   }
 
   const connect = useCallback(() => {
-    if (!CLIENT_ID)    { setError("Google Client ID not configured."); return; }
-    if (!tokenClient)  { setError("Google Identity Services not loaded yet."); return; }
+    if (!CLIENT_ID)   { setError("Google Client ID not configured."); return; }
+    if (!tokenClient) { setError("Google Identity Services not loaded yet."); return; }
     setStatus("connecting");
     setError(null);
     tokenClient.requestAccessToken({ prompt: "consent" });
@@ -200,7 +208,7 @@ export function useGoogleDriveBackup() {
     if (token && window.google?.accounts?.oauth2) {
       window.google.accounts.oauth2.revoke(token);
     }
-    clearStoredToken();
+    clearToken();
     localStorage.removeItem("gdrive_email_v1");
     localStorage.removeItem(LAST_SYNC_KEY);
     setUserEmail(null); setLastSync(null); setStatus("idle"); setError(null);

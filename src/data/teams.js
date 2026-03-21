@@ -179,6 +179,7 @@ const MILB_HIGH_A = [
   // South Atlantic League
   { name: "Aberdeen IronBirds",      affiliate: "BAL", logo: milbLogo("aberdeen-ironbirds")    },
   { name: "Asheville Tourists",      affiliate: "HOU", logo: milbLogo("asheville-tourists")    },
+  { name: "Bowling Green Hot Rods",     affiliate: "TB",  logo: milbLogo("bowling-green-hot-rods") },
   { name: "Brooklyn Cyclones",       affiliate: "NYM", logo: milbLogo("brooklyn-cyclones")     },
   { name: "Greensboro Grasshoppers", affiliate: "PIT", logo: milbLogo("greensboro-grasshoppers") },
   { name: "Greenville Drive",        affiliate: "BOS", logo: milbLogo("greenville-drive")      },
@@ -369,6 +370,9 @@ const NCAA_TEAMS = [
   { name: "Western Michigan Broncos",  logo: ncaaLogo(2711)  },
   { name: "Wisconsin Badgers",         logo: ncaaLogo(275)   },
   { name: "Wyoming Cowboys",           logo: ncaaLogo(2751)  },
+  { name: "Xavier Musketeers",            logo: ncaaLogo(2752)   },  
+  { name: "East Tennessee State Buccaneers", logo: ncaaLogo(2193) },
+  { name: "Northern Kentucky Norse", logo: ncaaLogo(94) },
 ];
 
 // ── Exports ──────────────────────────────────────────────────────

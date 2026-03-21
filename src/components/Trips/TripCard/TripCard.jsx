@@ -20,7 +20,7 @@ export default function TripCard({ trip, onView, onEdit, onDelete }) {
     ...(trip.stops || []).flatMap(s => s.photos || []),
   ];
 
-  const previewPhotos = allPhotos.slice(0, 4);
+  const previewPhotos = allPhotos.slice(0, 5);
   const extraCount    = allPhotos.length - previewPhotos.length;
 
   // Load dataUrls for the preview strip from IndexedDB
@@ -86,17 +86,6 @@ export default function TripCard({ trip, onView, onEdit, onDelete }) {
         </div>
       </div>
 
-      {/* ── Route summary ─────────────────────── */}
-      {allStops.length >= 2 && (
-        <div className={styles.route}>
-          {allStops.map((s, i) => (
-            <span key={i} className={styles.routeStop}>
-              {i > 0 && <span className={styles.routeArrow}>→</span>}
-              {s.name?.split(",")[0]}
-            </span>
-          ))}
-        </div>
-      )}
 
       {/* ── Photo strip ───────────────────────── */}
       {previewPhotos.length > 0 && (
