@@ -4,6 +4,7 @@ import ReactDOM from "react-dom/client";
 import App from "./App";
 import { TripsProvider } from "./context/TripsContext";
 import { GamesProvider } from "./context/GamesContext";
+import { MemoriesProvider } from "./context/MemoriesContext";
 import { migratePhotosFromLocalStorage } from "./utils/photoStorage";
 import "./styles/global.css";
 
@@ -30,7 +31,9 @@ ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
     <TripsProvider>
       <GamesProvider>
+        <MemoriesProvider>
         <App />
+        </MemoriesProvider>
       </GamesProvider>
     </TripsProvider>
   </React.StrictMode>

@@ -9,17 +9,20 @@ import GamesListPage   from "@/pages/GamesListPage";
 import GameEditorPage  from "@/pages/GameEditorPage";
 import ShowcasePage    from "@/pages/ShowcasePage";
 import AutoSyncProvider from "@/components/AutoSyncProvider";
+import MemoryListPage  from "@/pages/MemoryListPage";
 
 export default function App() {
   const [view,         setView]         = useState(VIEWS.LIST);
   const [selectedTrip, setSelectedTrip] = useState(null);
   const [selectedGame, setSelectedGame] = useState(null);
+  const [selectedMemory, setSelectedMemory] = useState(null);
 
   function openEditor(trip = null)         { setSelectedTrip(trip); setView(VIEWS.EDIT); }
   function openMap(trip)                   { setSelectedTrip(trip); setView(VIEWS.MAP); }
   function openGames()                     { setView(VIEWS.GAMES); }
   function openGameEditor(game = null)     { setSelectedGame(game); setView(VIEWS.GAME_EDIT); }
   function openShowcase()                  { setView(VIEWS.SHOWCASE); }
+  function openMemories(memory = null)     { setSelectedMemory(memory); setView(VIEWS.MEMORIES); }
 
   function goToList() {
     setSelectedTrip(null);
@@ -50,6 +53,9 @@ export default function App() {
       {view === VIEWS.SHOWCASE && (
         <ShowcasePage onBack={goToList} />
       )}
+      {view === VIEWS.MEMORIES && (
+        <MemoryListPage  onBack={goToList}/>
+      )}
       {view === VIEWS.LIST && (
         <TripListPage
           onNewTrip={() => openEditor(null)}
@@ -58,6 +64,7 @@ export default function App() {
           onViewHistory={() => setView(VIEWS.HISTORY)}
           onViewGames={openGames}
           onViewShowcase={openShowcase}
+          onViewMemories={openMemories}
         />
       )}
     </>

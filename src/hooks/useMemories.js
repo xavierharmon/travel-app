@@ -1,0 +1,1 @@
+export { useMemories } from "@/context/MemoriesContext";

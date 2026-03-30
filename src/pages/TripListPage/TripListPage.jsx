@@ -65,6 +65,7 @@ export default function TripListPage({
   onViewHistory,
   onViewGames,
   onViewShowcase,
+  onViewMemories,
 }) {
   const { trips, loading, error, deleteTrip } = useTrips();
   const [showBackup,    setShowBackup]    = useState(false);
@@ -144,6 +145,9 @@ export default function TripListPage({
           </Button>
           <Button variant="secondary" onClick={onViewHistory} size="md">
             🗺️ Trip History
+          </Button>
+          <Button variant="secondary" onClick={onViewMemories} size="md">
+            📸 Memories
           </Button>
           <Button onClick={onNewTrip} size="md">
             + New Trip
