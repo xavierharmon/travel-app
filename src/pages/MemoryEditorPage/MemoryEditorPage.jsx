@@ -16,7 +16,7 @@ export default function MemoryEditorPage({ memory, onBack }) {
                 date: new Date().toISOString().slice(0,10),
                 name: "",
                 description: "",
-                photos: "",
+                photos: [],
 
             };
         }
@@ -39,10 +39,10 @@ export default function MemoryEditorPage({ memory, onBack }) {
     function handleSave() {
         if (!validate()) return;
         if (isNew) {
-            addMemory({ ...memory, id: generateId() });
+            addMemory({ ...form, id: generateId() });
 
         } else {
-            updateMemory({ ...memory });
+            updateMemory({ ...form });
         }
         onBack();
     }
