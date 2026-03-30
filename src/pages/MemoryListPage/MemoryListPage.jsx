@@ -1,6 +1,6 @@
 import styles from "./MemoryListPage.module.css";
 import { useMemories } from "@/hooks/useMemories";
-//import MemoriesCard from "@/components/memories/MemoriesCard";
+import MemoriesCard from "@/components/memories/MemoriesCard";
 import Button from "@/components/common/Button";
 import { useState, useMemo } from "react";
 import BackupSettingsModal from "@/components/BackupSettingsModal";

@@ -1,0 +1,24 @@
+.page { min-height: 100vh; }
+
+.inner {
+  max-width: 680px;
+  margin:    0 auto;
+  padding:   var(--space-lg) var(--space-xl) 100px;
+}
+
+.topBar {
+  display:         flex;
+  align-items:     center;
+  justify-content: space-between;
+  margin-bottom:   var(--space-lg);
+  gap:             var(--space-sm);
+}
+
+.topActions {
+  display: flex;
+  gap:     var(--space-sm);
+}
+
+.bottomActions {
+  margin-top: var(--space-lg);
+}

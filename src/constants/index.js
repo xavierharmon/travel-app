@@ -11,6 +11,7 @@ export const VIEWS = {
   GAME_EDIT: "game_edit",
   SHOWCASE:  "showcase",
   MEMORIES:  "memories",
+  MEMORIES_EDIT: "memories_edit",
 };
 
 export const STOP_COLORS = {
