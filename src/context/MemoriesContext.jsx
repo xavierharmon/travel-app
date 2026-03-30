@@ -14,7 +14,7 @@ function loadMemories() {
 
 function saveMemories(memories) {
     try {
-        localStorage.setItem(MEMORIES_STORAGE_KEY, JSON.stringify(memoires));
+        localStorage.setItem(MEMORIES_STORAGE_KEY, JSON.stringify(memories));
     } catch (err) {
         if (err.name === "QuotaExceededError") {
             throw new Error("Storage is full. Try removing some memories before adding new ones.");
@@ -56,16 +56,16 @@ export function MemoriesProvider({ children }) {
     const updateMemory = useCallback((updatedMemory) => {
         if (!updatedMemory.id) return;
         setMemories(prev => {
-            const udpated = prev.map(m => m.id === updatedMemory.id ? {...m, ...updatedMemory } :m);
+            const updated = prev.map(m => m.id === updatedMemory.id ? {...m, ...updatedMemory } :m);
             saveMemories(updated);
             notifyDataSaved();
-            return udpated;
+            return updated;
         });
     }, []);
 
     const deleteMemory = useCallback((id) => {
         setMemories(prev => {
-            const udpated = prev.filter(m => m.id !== id);
+            const updated = prev.filter(m => m.id !== id);
             saveMemories(updated);
             notifyDataSaved();
             return updated;

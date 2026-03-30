@@ -24,7 +24,7 @@ export default function App() {
   function openGameEditor(game = null)     { setSelectedGame(game); setView(VIEWS.GAME_EDIT); }
   function openShowcase()                  { setView(VIEWS.SHOWCASE); }
   function openMemories()                  { setView(VIEWS.MEMORIES); }
-  function openMemoriesEditor(memory = null) { setSelectedMemory(memory); setView(VIEWS.MEMORIES); }
+  function openMemoriesEditor(memory = null) { setSelectedMemory(memory); setView(VIEWS.MEMORIES_EDIT); }
 
   function goToList() {
     setSelectedTrip(null);

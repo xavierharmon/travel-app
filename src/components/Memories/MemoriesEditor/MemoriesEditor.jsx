@@ -13,10 +13,10 @@ export default function MemoriesEditor({ memory, onBack}) {
         if (!memory) {
             return {
                 id: null, 
-                date: new DATE().toISOString().slice(0,10),
+                date: new Date().toISOString().slice(0,10),
                 name: "",
                 description: "",
-                photos: "",
+                photos: [],
 
             };
         }
@@ -42,43 +42,43 @@ export default function MemoriesEditor({ memory, onBack}) {
                 <input
                     className={`${styles.nameInput} ${errors?.name ? styles.nameInputError : ""}`}
                     value={form.name || ""}
-                    onChange={m => setErrors("name", m.target.value)}
+                    onChange={e => set("name", e.target.value)}
                     placeholder="MemoryName"
                 />
                 {errors?.name && <p className={styles.errorText}>{errors.name} </p>}
             </div>
 
-            {/*Description*/
-            <section classname={styles.section}>
+            {/*Description*/}
+            <section className={styles.section}>
                 <div className={styles.field}>
                     <label className={styles.label}>Date</label>
                     <input
                         type="date"
                         className={styles.input}
                         value={form.date || ""}
-                        onChange={m => setErrors("date",m.target.value)}
+                        onChange={e => set("date",e.target.value)}
                     />
                 </div>
                 <div className={styles.field}>
-                    <label calssName={styles.label}>Description / Notes</label>
+                    <label className={styles.label}>Description / Notes</label>
                     <textarea
                         className={styles.textarea}
                         value={form.description || ""}
-                        onChange={m => setErrors("description", m.target.valeu)}
+                        onChange={e => set("description", e.target.valeu)}
                         placeholder="What made this memory special?"
                         rows={4}
                     />
                 </div>
-            </section>}
+            </section>
 
-            {/*Photos*/
+            {/*Photos*/}
             <section className={styles.section}>
                 <h3 className={styles.sectionTitle}>Memory Photos</h3>
                 <PhotoGrid
                     photos={form.photos || []}
-                    onChange={photos => setErrors("photos", photos)}
+                    onChange={photos => set("photos", photos)}
                 />
-            </section>}
+            </section>
             
         </div>
     );

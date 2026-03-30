@@ -13,7 +13,7 @@ export default function MemoryEditorPage({ memory, onBack }) {
         if (!memory) {
             return {
                 id: null, 
-                date: new DATE().toISOString().slice(0,10),
+                date: new Date().toISOString().slice(0,10),
                 name: "",
                 description: "",
                 photos: "",
@@ -55,7 +55,7 @@ export default function MemoryEditorPage({ memory, onBack }) {
                 <div className={styles.topBar}>
                     <Button variant="ghost" onClick={onBack}>← Back</Button>
                     <Button variant="primary" onClick={handleSave}>
-                        {isNew ? "Save Trip" : "Update Trip"}
+                        {isNew ? "Save Memory" : "Update Memory"}
                     </Button>
                 </div>
             </div>

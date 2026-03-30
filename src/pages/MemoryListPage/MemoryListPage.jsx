@@ -55,7 +55,7 @@ export default function MemoryListPage({onNewMemory,onEditMemory,}) {
                 <div className={styles.brand}>
                     <div className={styles.brandIcon}>
                         <img 
-                            src="/logo.png"
+                            src="/memorieslogo.png"
                             alt="Xavier & Kylie's Memories"
                             className={styles.brandLogo}
                         />
@@ -104,7 +104,7 @@ export default function MemoryListPage({onNewMemory,onEditMemory,}) {
             ) : memories.length === 0 ? (
                 <div className={styles.empty}>
                     <img
-                        src="/logo.png"
+                        src="/memorieslogo.png"
                         alt="Start a Memory"
                         style={{ width: 100, height: 100, objectFit: "contain", opacity: 0.5 }}
                     />
@@ -115,7 +115,7 @@ export default function MemoryListPage({onNewMemory,onEditMemory,}) {
                 </div>
             ) : (
                 <div className={styles.memoryList}>
-                    {sortedTrips.map(trip => (
+                    {sortedMemories.map(memory => (
                         <MemoriesCard
                             key={memory.id}
                             memory={memory}
