@@ -8,7 +8,7 @@ export default function MemoriesCard({ memory, onView, onEdit, onDelete }) {
         ...(memory.photos || []),
     ];
 
-    previewPhotos = allPhotos.slice(0, 5);
+    const previewPhotos = allPhotos.slice(0, 5);
     const extraCount = allPhotos.length - previewPhotos.length;
 
     const photoUrls = usePhotoUrls(previewPhotos);
