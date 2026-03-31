@@ -1,85 +1,64 @@
-import { useState } from 'react';
+// src/components/Memories/MemoriesEditor/MemoriesEditor.jsx
+//
+// Pure controlled form — receives form/errors/onChange from MemoryEditorPage.
+// Does NOT call addMemory/updateMemory itself (that's the page's job).
+
 import styles from "./MemoriesEditor.module.css";
-import { useMemories } from "@/context/MemoriesContext";
-import { generateId } from "@/utils/imageHelpers";
-import Button from "@/components/common/Button";
 import PhotoGrid from "@/components/common/PhotoGrid";
 
-export default function MemoriesEditor({ memory, onBack}) {
-    const { addMemory, updateMemory } = useMemories();
-    const isNew = !memory?.id;
+export default function MemoriesEditor({ form, errors, onChange }) {
+  if (!form) return null;
 
-    const [form, setForm] = useState(() => {
-        if (!memory) {
-            return {
-                id: null, 
-                date: new Date().toISOString().slice(0,10),
-                name: "",
-                description: "",
-                photos: [],
+  function set(field, value) {
+    onChange({ ...form, [field]: value });
+  }
 
-            };
-        }
-        return {...memory };
-    });
+  return (
+    <div className={styles.editor}>
 
-    const [errors, setErrors] = useState({});
+      {/* Memory Name */}
+      <div className={styles.nameRow}>
+        <input
+          className={`${styles.nameInput} ${errors?.name ? styles.nameInputError : ""}`}
+          value={form.name || ""}
+          onChange={e => set("name", e.target.value)}
+          placeholder="Memory Name"
+        />
+        {errors?.name && <p className={styles.errorText}>{errors.name}</p>}
+      </div>
 
-    function handleSave() {
-        if (!validate()) return;
-        if (isNew) {
-            addMemory({...toSave, id: generateId() });
-        } else {
-            updateMemory({...toSave});
-        }
-        onBack();
-    }
-
-    return (
-        <div className={styles.editor}>
-            {/*TripName*/}
-            <div className={styles.nameRow}>
-                <input
-                    className={`${styles.nameInput} ${errors?.name ? styles.nameInputError : ""}`}
-                    value={form.name || ""}
-                    onChange={e => set("name", e.target.value)}
-                    placeholder="MemoryName"
-                />
-                {errors?.name && <p className={styles.errorText}>{errors.name} </p>}
-            </div>
-
-            {/*Description*/}
-            <section className={styles.section}>
-                <div className={styles.field}>
-                    <label className={styles.label}>Date</label>
-                    <input
-                        type="date"
-                        className={styles.input}
-                        value={form.date || ""}
-                        onChange={e => set("date",e.target.value)}
-                    />
-                </div>
-                <div className={styles.field}>
-                    <label className={styles.label}>Description / Notes</label>
-                    <textarea
-                        className={styles.textarea}
-                        value={form.description || ""}
-                        onChange={e => set("description", e.target.valeu)}
-                        placeholder="What made this memory special?"
-                        rows={4}
-                    />
-                </div>
-            </section>
-
-            {/*Photos*/}
-            <section className={styles.section}>
-                <h3 className={styles.sectionTitle}>Memory Photos</h3>
-                <PhotoGrid
-                    photos={form.photos || []}
-                    onChange={photos => set("photos", photos)}
-                />
-            </section>
-            
+      {/* Date + Description */}
+      <section className={styles.section}>
+        <div className={styles.field}>
+          <label className={styles.label}>Date</label>
+          <input
+            type="date"
+            className={styles.input}
+            value={form.date || ""}
+            onChange={e => set("date", e.target.value)}
+          />
         </div>
-    );
+        <div className={styles.field}>
+          <label className={styles.label}>Description / Notes</label>
+          <textarea
+            className={styles.textarea}
+            value={form.description || ""}
+            onChange={e => set("description", e.target.value)}
+            placeholder="What made this memory special?"
+            rows={4}
+          />
+        </div>
+      </section>
+
+      {/* Photos */}
+      <section className={styles.section}>
+        <h3 className={styles.sectionTitle}>Memory Photos</h3>
+        <PhotoGrid
+          photos={form.photos || []}
+          onChange={photos => set("photos", photos)}
+        />
+      </section>
+
+    </div>
+  );
 }
