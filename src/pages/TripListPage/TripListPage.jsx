@@ -22,6 +22,7 @@ const KEY_LABELS = {
   "sports_games_v1":       "Games",
   "road_trip_routes_v1":   "Routes",
   "road_trip_mileage_v1":  "Mileage",
+  "favorite_memories_v1":    "Memories",
 };
 
 function sortTrips(trips, sortBy) {

@@ -6,6 +6,7 @@ const ALL_STORAGE_KEYS = [
   "sports_games_v1",
   "road_trip_routes_v1",
   "road_trip_mileage_v1",
+  "favorite_memories_v1",
 ];
 
 export function loadTrips() {
