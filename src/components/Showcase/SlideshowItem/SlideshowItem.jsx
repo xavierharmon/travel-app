@@ -6,70 +6,93 @@ import GameFallbackCard from "@/components/Showcase/GameFallbackCard";
 import { getPhotos } from "@/utils/photoStorage";
 import { formatMiles } from "@/utils/haversine";
 
-// Deterministic rotation from a string seed so it's stable per-item
-function seedRotation(str, index) {
+// ── Scatter layout helpers ───────────────────────────────────────
+//
+// Instead of random offsets (which cause stacking), we assign each
+// slot a deliberate position in a spread layout so cards are always
+// visibly separated. Tilt is still seeded-random per item for personality.
+
+function getSlotTransform(slotIndex, totalCount, tiltDeg) {
+  // Horizontal spread: evenly space cards across ~60% of the viewport width
+  // so they're clearly separated but still feel like a casual pile.
+  const spreadFactor = totalCount === 1 ? 0 : totalCount === 2 ? 1 : 1;
+
+  const offsets = {
+    1: [{ x: 0,    y: 0  }],
+    2: [{ x: -200, y: -20 }, { x: 200,  y: 20  }],
+    3: [{ x: -260, y: 10  }, { x: 0,    y: -30 }, { x: 260, y: 15 }],
+  };
+
+  const pos = (offsets[totalCount] || offsets[1])[slotIndex] || { x: 0, y: 0 };
+  return `translate(${pos.x}px, ${pos.y}px) rotate(${tiltDeg}deg)`;
+}
+
+// Deterministic tilt from item id + slot index — stable across re-renders
+function seedTilt(id, index) {
   let hash = 0;
+  const str = `${id}-slot-${index}`;
   for (let i = 0; i < str.length; i++) {
     hash = (hash * 31 + str.charCodeAt(i)) & 0xffffffff;
   }
-  const base = ((hash >> (index * 5)) & 0xff) / 255; // 0–1
-  return (base * 16 - 8).toFixed(2); // -8deg to +8deg
+  const norm = ((hash >>> 0) % 1000) / 1000; // 0–1
+  return ((norm * 14) - 7).toFixed(2);        // -7deg to +7deg
 }
 
-// Deterministic offset so cards don't perfectly stack
-function seedOffset(str, index, axis) {
-  let hash = 0;
-  const salt = axis + index;
-  for (let i = 0; i < str.length + salt; i++) {
-    hash = (hash * 37 + (str.charCodeAt(i % str.length) || salt)) & 0xffffffff;
-  }
-  const base = ((hash >> 3) & 0xff) / 255;
-  return ((base * 80) - 40).toFixed(1); // -40px to +40px
-}
-
-// ── Polaroid pile ────────────────────────────────────────────────
-function PolaroidPile({ item, dataUrls, animationKey }) {
-  const photos = dataUrls.filter(Boolean).slice(0, 3);
-  if (!photos.length) return null;
+// ── Trip polaroid pile ───────────────────────────────────────────
+function TripPolaroidPile({ item, dataUrls, animationKey }) {
+  const validUrls = dataUrls.filter(Boolean);
+  if (!validUrls.length) return null;
 
   const title = item.source === "stop" && item.stopName
     ? item.stopName
     : item.tripName;
+
   const subtitle = item.source === "stop" && item.stopName
     ? item.tripName
-    : item.date || null;
+    : null;
 
-  // Z-order: last card visually on top (highest z-index)
   return (
     <div className={styles.polaroidScene}>
-      {photos.map((src, i) => {
-        const seed    = `${item.id}-${i}`;
-        const rot     = seedRotation(seed, i);
-        const ox      = seedOffset(seed, i, "x");
-        const oy      = seedOffset(seed, i, "y");
-        const zIndex  = i + 1;
+      {validUrls.map((src, i) => {
+        const tilt      = seedTilt(item.id, i);
+        const transform = getSlotTransform(i, validUrls.length, tilt);
 
         return (
           <div
             key={`${animationKey}-${i}`}
             className={styles.polaroid}
             style={{
-              zIndex,
-              "--rot1": `rotate(${rot}deg) translate(${ox}px, ${oy}px)`,
-              "--rot2": `rotate(${rot}deg) translate(${ox}px, ${oy}px)`,
-              "--rot3": `rotate(${rot}deg) translate(${ox}px, ${oy}px)`,
+              zIndex:                i + 1,
+              "--final-transform":   transform,
             }}
           >
             <img src={src} alt={title} className={styles.polaroidImg} />
+
             <div className={styles.polaroidCaption}>
+              {/* Title: stop name or trip name */}
               <p className={styles.polaroidTitle}>{title}</p>
+
+              {/* Subtitle: trip name when showing a stop photo */}
               {subtitle && (
-                <p className={styles.polaroidMeta}>{subtitle}</p>
+                <p className={styles.polaroidMeta}>✈ {subtitle}</p>
               )}
+
+              {/* Date */}
+              {item.date && (
+                <p className={styles.polaroidMeta}>📅 {item.date}</p>
+              )}
+
+              {/* Mileage — only on the first card to avoid repetition */}
               {i === 0 && item.mileage?.total > 0 && (
                 <p className={styles.polaroidMeta}>
                   📏 {formatMiles(item.mileage.total)}
+                  {item.mileage.hasUncachedDrive ? "~" : ""}
                 </p>
+              )}
+
+              {/* Photo caption */}
+              {item.caption && (
+                <p className={styles.polaroidMeta}>"{item.caption}"</p>
               )}
             </div>
           </div>
@@ -81,51 +104,73 @@ function PolaroidPile({ item, dataUrls, animationKey }) {
 
 // ── Game polaroid pile ───────────────────────────────────────────
 function GamePolaroidPile({ item, dataUrls, animationKey }) {
-  const photos = dataUrls.filter(Boolean).slice(0, 3);
-  if (!photos.length) return null;
+  const validUrls = dataUrls.filter(Boolean);
+  if (!validUrls.length) return null;
 
-  const OUTCOME_COLORS = { win: "#22c55e", loss: "#ef4444", tie: "#60a5fa" };
-  const outcomeColor   = OUTCOME_COLORS[item.outcome] || "#888";
-  const title          = `${item.homeTeam} vs ${item.visitingTeam}`;
-  const score          = item.homeScore != null && item.visitingScore != null
-    ? `${item.homeScore} – ${item.visitingScore}`
-    : null;
+  const OUTCOME_COLORS = { win: "#16a34a", loss: "#dc2626", tie: "#2563eb" };
+  const outcomeColor   = OUTCOME_COLORS[item.outcome] || "#555";
+
+  const title = `${item.homeTeam} vs ${item.visitingTeam}`;
+
+  const hasScore = item.homeScore != null && item.visitingScore != null;
 
   return (
     <div className={styles.polaroidScene}>
-      {photos.map((src, i) => {
-        const seed   = `${item.id}-${i}`;
-        const rot    = seedRotation(seed, i);
-        const ox     = seedOffset(seed, i, "x");
-        const oy     = seedOffset(seed, i, "y");
-        const zIndex = i + 1;
+      {validUrls.map((src, i) => {
+        const tilt      = seedTilt(item.id, i);
+        const transform = getSlotTransform(i, validUrls.length, tilt);
 
         return (
           <div
             key={`${animationKey}-${i}`}
             className={styles.polaroid}
             style={{
-              zIndex,
-              "--rot1": `rotate(${rot}deg) translate(${ox}px, ${oy}px)`,
-              "--rot2": `rotate(${rot}deg) translate(${ox}px, ${oy}px)`,
-              "--rot3": `rotate(${rot}deg) translate(${ox}px, ${oy}px)`,
+              zIndex:              i + 1,
+              "--final-transform": transform,
             }}
           >
             <img src={src} alt={title} className={styles.polaroidImg} />
+
             <div className={styles.polaroidCaption}>
+              {/* Teams */}
               <p className={styles.polaroidTitle}>{title}</p>
-              {score && (
+
+              {/* Sport */}
+              {item.sport && (
                 <p className={styles.polaroidMeta}>
-                  {score}
-                  {item.outcome && (
-                    <span style={{ color: outcomeColor, marginLeft: 6, fontWeight: 700 }}>
-                      {item.outcome.toUpperCase()}
-                    </span>
-                  )}
+                  🏆 {item.sport === "College" && item.collegeSport
+                    ? `College ${item.collegeSport}`
+                    : item.sport}
                 </p>
               )}
+
+              {/* Score */}
+              {hasScore && (
+                <p className={styles.polaroidMeta}>
+                  {item.homeScore} – {item.visitingScore}
+                </p>
+              )}
+
+              {/* Outcome */}
+              {item.outcome && (
+                <p
+                  className={styles.polaroidOutcome}
+                  style={{ color: outcomeColor }}
+                >
+                  {item.outcome.toUpperCase()}
+                </p>
+              )}
+
+              {/* Date */}
               {item.date && (
-                <p className={styles.polaroidMeta}>{item.date}</p>
+                <p className={styles.polaroidMeta}>📅 {item.date}</p>
+              )}
+
+              {/* Venue / city */}
+              {(item.venue || item.city) && (
+                <p className={styles.polaroidMeta}>
+                  📍 {item.venue || item.city}
+                </p>
               )}
             </div>
           </div>
@@ -143,8 +188,6 @@ export default function SlideshowItem({ item, animationKey }) {
     if (!item?.photoId) { setDataUrls([]); return; }
     let cancelled = false;
 
-    // Collect up to 3 photo IDs from the item's siblings if available,
-    // otherwise just the single photoId
     const ids = item.siblingPhotoIds?.length
       ? [item.photoId, ...item.siblingPhotoIds].slice(0, 3)
       : [item.photoId];
@@ -182,7 +225,7 @@ export default function SlideshowItem({ item, animationKey }) {
   }
 
   return (
-    <PolaroidPile
+    <TripPolaroidPile
       item={item}
       dataUrls={dataUrls}
       animationKey={animationKey}
