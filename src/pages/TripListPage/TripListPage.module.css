@@ -24,8 +24,8 @@
 }
 
 .brandIcon {
-  width:           64px;
-  height:          64px;
+  width:           150px;
+  height:          150px;
   border-radius:   var(--radius-lg);
   overflow:        hidden;
   flex-shrink:     0;

@@ -131,29 +131,31 @@ export default function TripListPage({
                 ? "Loading…"
                 : `${trips.length} trip${trips.length !== 1 ? "s" : ""} saved`}
             </p>
+            <div style={{ display: "flex", gap: "var(--space-sm)", flexWrap: "wrap" }}>
+            <Button variant="secondary" onClick={() => setShowBackup(true)} size="md">
+              🗄️ Backup
+            </Button>
+            <Button variant="secondary" onClick={onViewShowcase} size="md">
+              ✨ Showcase
+            </Button>
+            <Button variant="secondary" onClick={onViewGames} size="md">
+              🏆 Sports Tracker
+            </Button>
+            <Button variant="secondary" onClick={onViewHistory} size="md">
+              🗺️ Trip History
+            </Button>
+            <Button variant="secondary" onClick={onViewMemories} size="md">
+              📸 Memories
+            </Button>
+            <Button onClick={onNewTrip} size="md">
+              + New Trip
+            </Button>
+          </div>
+
           </div>
         </div>
 
-        <div style={{ display: "flex", gap: "var(--space-sm)", flexWrap: "wrap" }}>
-          <Button variant="secondary" onClick={() => setShowBackup(true)} size="md">
-            🗄️ Backup
-          </Button>
-          <Button variant="secondary" onClick={onViewShowcase} size="md">
-            ✨ Showcase
-          </Button>
-          <Button variant="secondary" onClick={onViewGames} size="md">
-            🏆 Sports Tracker
-          </Button>
-          <Button variant="secondary" onClick={onViewHistory} size="md">
-            🗺️ Trip History
-          </Button>
-          <Button variant="secondary" onClick={onViewMemories} size="md">
-            📸 Memories
-          </Button>
-          <Button onClick={onNewTrip} size="md">
-            + New Trip
-          </Button>
-        </div>
+        
       </header>
 
       {/* ── Error banner ─────────────────────────── */}
