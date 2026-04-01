@@ -36,27 +36,31 @@ function buildTripItems(trips) {
 
     for (const photo of trip.photos || []) {
       if (!photo?.id) continue;
-      items.push({
-        kind:    "photo",
-        id:      `trip-${trip.id}-photo-${photo.id}`,
-        photoId: photo.id,     // ← ID only; SlideshowItem fetches dataUrl
-        caption: photo.caption || null,
-        source:  "trip",
-        ...baseCtx,
-      });
+      const tripPhotoIds = (trip.photos || []).map(p => p.id).filter(Boolean);
+        items.push({
+          kind:            "photo",
+          id:              `trip-${trip.id}-photo-${photo.id}`,
+          photoId:         photo.id,
+          siblingPhotoIds: tripPhotoIds.filter(id => id !== photo.id).slice(0, 2),
+          caption:         photo.caption || null,
+          source:          "trip",
+          ...baseCtx,
+        });
       photoCount++;
     }
 
     for (const stop of trip.stops || []) {
       for (const photo of stop.photos || []) {
         if (!photo?.id) continue;
+        const stopPhotoIds = (stop.photos || []).map(p => p.id).filter(Boolean);
         items.push({
-          kind:     "photo",
-          id:       `trip-${trip.id}-stop-${stop.id}-photo-${photo.id}`,
-          photoId:  photo.id,
-          caption:  photo.caption || null,
-          source:   "stop",
-          stopName: stop.name?.split(",")[0] || null,
+          kind:            "photo",
+          id:              `trip-${trip.id}-stop-${stop.id}-photo-${photo.id}`,
+          photoId:         photo.id,
+          siblingPhotoIds: stopPhotoIds.filter(id => id !== photo.id).slice(0, 2),
+          caption:         photo.caption || null,
+          source:          "stop",
+          stopName:        stop.name?.split(",")[0] || null,
           ...baseCtx,
         });
         photoCount++;
@@ -97,12 +101,14 @@ function buildGameItems(games) {
 
     for (const photo of photos) {
       if (!photo?.id) continue;
+      const gamePhotoIds = (game.photos || []).map(p => p.id).filter(Boolean);
       items.push({
-        kind:    "photo",
-        id:      `game-${game.id}-photo-${photo.id}`,
-        photoId: photo.id,
-        caption: photo.caption || null,
-        source:  "game",
+        kind:            "photo",
+        id:              `game-${game.id}-photo-${photo.id}`,
+        photoId:         photo.id,
+        siblingPhotoIds: gamePhotoIds.filter(id => id !== photo.id).slice(0, 2),
+        caption:         photo.caption || null,
+        source:          "game",
         ...baseCtx,
       });
     }
