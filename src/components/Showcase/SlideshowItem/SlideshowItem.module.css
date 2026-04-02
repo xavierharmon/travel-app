@@ -1,51 +1,61 @@
 @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400;600;700&display=swap');
 
 /* ── Shared full-bleed wrapper ───────────────── */
-.photoWrap,
 .fallbackWrap {
-  position: absolute;
-  inset:    0;
-  width:    100%;
-  height:   100%;
+  position:   absolute;
+  inset:      0;
+  width:      100%;
+  height:     100%;
+  background: var(--color-bg);
 }
 
-/* ── Polaroid scene ──────────────────────────── */
+/* ── Polaroid scene root ─────────────────────── */
 .polaroidScene {
-  position:        absolute;
-  inset:           0;
-  display:         flex;
+  position:   absolute;
+  inset:      0;
+  background: #0a0a0a;
+  overflow:   hidden;
+}
+
+/* ── Polaroid stage (upper area) ─────────────── */
+/* Polaroids float in the top 65% of the screen  */
+.polaroidStage {
+  position: absolute;
+  top:      0;
+  left:     0;
+  right:    0;
+  bottom:   20%;           /* leave room for scrapbook header */
+  display:  flex;
   align-items:     center;
   justify-content: center;
-  background:      #0a0a0a;
 }
 
 /* ── Individual polaroid card ────────────────── */
 .polaroid {
   position:         absolute;
   background:       #fdfdf8;
-  padding:          14px 14px 62px;
+  padding:          14px 14px 40px;
   border-radius:    2px;
-  box-shadow:       0 6px 24px rgba(0,0,0,0.75), 0 2px 6px rgba(0,0,0,0.5);
-  width:            clamp(180px, 26vw, 360px);
+  box-shadow:       0 8px 32px rgba(0,0,0,0.8), 0 2px 8px rgba(0,0,0,0.5);
+  width:            clamp(160px, 22vw, 320px);
   transform-origin: center center;
   will-change:      transform, opacity;
 }
 
-/* ── Per-slot drift-in (translate from unique direction, land at CSS var position) */
 .polaroid:nth-child(1) { animation: driftIn1 0.65s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
 .polaroid:nth-child(2) { animation: driftIn2 0.65s cubic-bezier(0.22, 1, 0.36, 1) 0.14s both; }
 .polaroid:nth-child(3) { animation: driftIn3 0.65s cubic-bezier(0.22, 1, 0.36, 1) 0.28s both; }
 
 @keyframes driftIn1 {
-  from { opacity: 0; transform: var(--final-transform) translateX(-120px) translateY(-80px) scale(0.85); }
+  from { opacity: 0; transform: var(--final-transform) translateX(-100px) translateY(-70px) scale(0.85); }
   to   { opacity: 1; transform: var(--final-transform); }
 }
 @keyframes driftIn2 {
-  from { opacity: 0; transform: var(--final-transform) translateX(0px) translateY(100px) scale(0.85); }
+  from { opacity: 0; transform: var(--final-transform) translateX(0px) translateY(90px) scale(0.85); }
   to   { opacity: 1; transform: var(--final-transform); }
 }
 @keyframes driftIn3 {
-  from { opacity: 0; transform: var(--final-transform) translateX(120px) translateY(-60px) scale(0.85); }
+  from { opacity: 0; transform: var(--final-transform) translateX(110px) translateY(-55px) scale(0.85); }
   to   { opacity: 1; transform: var(--final-transform); }
 }
 
@@ -58,46 +68,186 @@
   background:   #ccc;
 }
 
-/* ── Caption strip ───────────────────────────── */
+/* ── Polaroid caption (photo caption only, no stats) ── */
 .polaroidCaption {
-  display:        flex;
-  flex-direction: column;
-  gap:            3px;
-  padding-top:    10px;
-  min-height:     48px;
-  font-family:    'Caveat', cursive;
+  padding-top:  8px;
+  min-height:   28px;
+  font-family:  'Caveat', cursive;
+  font-size:    clamp(12px, 1.4vw, 16px);
+  color:        #555;
+  text-align:   center;
+  white-space:  nowrap;
+  overflow:     hidden;
+  text-overflow: ellipsis;
+  font-style:   italic;
 }
 
-.polaroidTitle {
-  font-size:     clamp(14px, 1.8vw, 20px);
+/* ── Scrapbook header panel ──────────────────── */
+/* Sits in the bottom 40% of the screen           */
+/* Torn paper top edge via clip-path              */
+.scrapbookHeader {
+  position:   absolute;
+  bottom:     0;
+  left:       0;
+  right:      0;
+  height:    25%;
+  background: #f5f0e8;
+  font-family: 'Caveat', cursive;
+
+  /* Torn paper edge — irregular zigzag at the top */
+  clip-path: polygon(
+    0% 18%,
+    2% 8%,
+    4% 16%,
+    6% 6%,
+    8% 14%,
+    10% 4%,
+    12% 13%,
+    14% 5%,
+    16% 15%,
+    18% 7%,
+    20% 16%,
+    22% 5%,
+    24% 14%,
+    26% 6%,
+    28% 17%,
+    30% 7%,
+    32% 15%,
+    34% 4%,
+    36% 14%,
+    38% 6%,
+    40% 16%,
+    42% 5%,
+    44% 13%,
+    46% 4%,
+    48% 15%,
+    50% 6%,
+    52% 16%,
+    54% 7%,
+    56% 14%,
+    58% 5%,
+    60% 15%,
+    62% 6%,
+    64% 16%,
+    66% 8%,
+    68% 14%,
+    70% 4%,
+    72% 13%,
+    74% 5%,
+    76% 15%,
+    78% 7%,
+    80% 17%,
+    82% 6%,
+    84% 14%,
+    86% 5%,
+    88% 15%,
+    90% 7%,
+    92% 16%,
+    94% 6%,
+    96% 14%,
+    98% 5%,
+    100% 14%,
+    100% 100%,
+    0% 100%
+  );
+
+  animation: slideUpHeader 0.55s cubic-bezier(0.22, 1, 0.36, 1) 0.1s both;
+}
+
+@keyframes slideUpHeader {
+  from { transform: translateY(30px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+/* ── Header inner content (pushed below the torn edge) ── */
+.scrapbookInner {
+  position:       absolute;
+  bottom:         0;
+  left:           0;
+  right:          0;
+  top:            18%;       /* below the highest point of the torn edge */
+  padding:        12px clamp(24px, 5vw, 80px) 20px;
+  display:        flex;
+  flex-direction: column;
+  justify-content: center;
+  gap:            8px;
+}
+
+/* ── Title line ──────────────────────────────── */
+.scrapbookTitle {
+  font-family:   'Caveat', cursive;
+  font-size:     clamp(22px, 4vw, 48px);
   font-weight:   700;
   color:         #1a1a1a;
   margin:        0;
+  line-height:   1.1;
   white-space:   nowrap;
   overflow:      hidden;
   text-overflow: ellipsis;
-  line-height:   1.2;
 }
 
-.polaroidMeta {
-  font-size:     clamp(11px, 1.4vw, 16px);
-  font-weight:   400;
-  color:         #444;
-  margin:        0;
-  white-space:   nowrap;
-  overflow:      hidden;
-  text-overflow: ellipsis;
-  line-height:   1.3;
-}
-
-.polaroidOutcome {
-  font-size:   clamp(12px, 1.5vw, 17px);
-  font-weight: 700;
+/* ── Subtitle (trip name when showing a stop) ── */
+.scrapbookSubtitle {
+  font-family: 'Caveat', cursive;
+  font-size:   clamp(14px, 2vw, 24px);
+  font-weight: 400;
+  color:       #555;
   margin:      0;
-  line-height: 1.3;
+  line-height: 1.2;
 }
 
-/* ── Fallback card wrapper ───────────────────── */
-.fallbackWrap {
-  background: var(--color-bg);
+/* ── Stats row ───────────────────────────────── */
+.scrapbookStats {
+  display:     flex;
+  align-items: center;
+  gap:         clamp(8px, 1.5vw, 20px);
+  flex-wrap:   wrap;
+  margin-top:  4px;
 }
+
+.statItem {
+  font-family: 'Caveat', cursive;
+  font-size:   clamp(13px, 1.8vw, 22px);
+  font-weight: 600;
+  color:       #333;
+  display:     flex;
+  align-items: center;
+  gap:         5px;
+  white-space: nowrap;
+}
+
+/* Divider dot between stats */
+.statItem + .statItem::before {
+  content:      "·";
+  color:        #aaa;
+  margin-right: 5px;
+  font-weight:  400;
+}
+
+/* ── Outcome badge (games) ────────────────────── */
+.outcomeBadge {
+  font-family:   'Caveat', cursive;
+  font-size:     clamp(13px, 1.8vw, 22px);
+  font-weight:   700;
+  padding:       3px 14px;
+  border-radius: 3px;
+  letter-spacing: 0.05em;
+}
+
+/* ── Tape decoration (top corners of header) ─── */
+/* Pure CSS tape strips — purely decorative       */
+.scrapbookHeader::before,
+.scrapbookHeader::after {
+  content:          "";
+  position:         absolute;
+  top:              10%;
+  width:            clamp(100px, 6vw, 100px);
+  height:           clamp(14px, 2vw, 22px);
+  background:       rgba(255, 230, 120, 0.55);
+  border:           1px solid rgba(200, 170, 60, 0.3);
+  border-radius:    2px;
+  transform:        rotate(-2deg);
+}
+
+.scrapbookHeader::before { left:  clamp(20px, 4vw, 60px); transform: rotate(-3deg); }
+.scrapbookHeader::after  { right: clamp(20px, 4vw, 60px); transform: rotate(2deg);  }

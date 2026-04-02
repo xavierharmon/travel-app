@@ -8,174 +8,177 @@ import { formatMiles } from "@/utils/haversine";
 
 // ── Scatter layout helpers ───────────────────────────────────────
 //
-// Instead of random offsets (which cause stacking), we assign each
-// slot a deliberate position in a spread layout so cards are always
-// visibly separated. Tilt is still seeded-random per item for personality.
+// Each slot gets a deliberate position within the polaroidStage so
+// cards are always visibly separated. Tilt is seeded-deterministic
+// so the same item always lands at the same angle.
 
 function getSlotTransform(slotIndex, totalCount, tiltDeg) {
-  // Horizontal spread: evenly space cards across ~60% of the viewport width
-  // so they're clearly separated but still feel like a casual pile.
-  const spreadFactor = totalCount === 1 ? 0 : totalCount === 2 ? 1 : 1;
-
   const offsets = {
-    1: [{ x: 0,    y: 0  }],
-    2: [{ x: -200, y: -20 }, { x: 200,  y: 20  }],
-    3: [{ x: -260, y: 10  }, { x: 0,    y: -30 }, { x: 260, y: 15 }],
+    1: [{ x: 0,    y: 0   }],
+    2: [{ x: -170, y: -15 }, { x: 170,  y: 15  }],
+    3: [{ x: -230, y: 10  }, { x: 0,    y: -25 }, { x: 230, y: 12 }],
   };
-
   const pos = (offsets[totalCount] || offsets[1])[slotIndex] || { x: 0, y: 0 };
   return `translate(${pos.x}px, ${pos.y}px) rotate(${tiltDeg}deg)`;
 }
 
-// Deterministic tilt from item id + slot index — stable across re-renders
 function seedTilt(id, index) {
   let hash = 0;
   const str = `${id}-slot-${index}`;
   for (let i = 0; i < str.length; i++) {
     hash = (hash * 31 + str.charCodeAt(i)) & 0xffffffff;
   }
-  const norm = ((hash >>> 0) % 1000) / 1000; // 0–1
-  return ((norm * 14) - 7).toFixed(2);        // -7deg to +7deg
+  const norm = ((hash >>> 0) % 1000) / 1000;
+  return ((norm * 14) - 7).toFixed(2); // -7deg to +7deg
 }
 
-// ── Trip polaroid pile ───────────────────────────────────────────
-function TripPolaroidPile({ item, dataUrls, animationKey }) {
-  const validUrls = dataUrls.filter(Boolean);
-  if (!validUrls.length) return null;
-
-  const title = item.source === "stop" && item.stopName
-    ? item.stopName
-    : item.tripName;
-
-  const subtitle = item.source === "stop" && item.stopName
-    ? item.tripName
-    : null;
+// ── Scrapbook header — trip/stop ────────────────────────────────
+function TripScrapbookHeader({ item }) {
+  const isStop = item.source === "stop" && item.stopName;
+  const title    = isStop ? item.stopName : item.tripName;
+  const subtitle = isStop ? item.tripName : null;
 
   return (
-    <div className={styles.polaroidScene}>
-      {validUrls.map((src, i) => {
-        const tilt      = seedTilt(item.id, i);
-        const transform = getSlotTransform(i, validUrls.length, tilt);
-
-        return (
-          <div
-            key={`${animationKey}-${i}`}
-            className={styles.polaroid}
-            style={{
-              zIndex:                i + 1,
-              "--final-transform":   transform,
-            }}
-          >
-            <img src={src} alt={title} className={styles.polaroidImg} />
-
-            <div className={styles.polaroidCaption}>
-              {/* Title: stop name or trip name */}
-              <p className={styles.polaroidTitle}>{title}</p>
-
-              {/* Subtitle: trip name when showing a stop photo */}
-              {subtitle && (
-                <p className={styles.polaroidMeta}>✈ {subtitle}</p>
-              )}
-
-              {/* Date */}
-              {item.date && (
-                <p className={styles.polaroidMeta}>📅 {item.date}</p>
-              )}
-
-              {/* Mileage — only on the first card to avoid repetition */}
-              {i === 0 && item.mileage?.total > 0 && (
-                <p className={styles.polaroidMeta}>
-                  📏 {formatMiles(item.mileage.total)}
-                  {item.mileage.hasUncachedDrive ? "~" : ""}
-                </p>
-              )}
-
-              {/* Photo caption */}
-              {item.caption && (
-                <p className={styles.polaroidMeta}>"{item.caption}"</p>
-              )}
-            </div>
-          </div>
-        );
-      })}
+    <div className={styles.scrapbookHeader}>
+      <div className={styles.scrapbookInner}>
+        <h2 className={styles.scrapbookTitle}>{title}</h2>
+        {subtitle && (
+          <p className={styles.scrapbookSubtitle}>{subtitle}</p>
+        )}
+        <div className={styles.scrapbookStats}>
+          {item.date && (
+            <span className={styles.statItem}>📅 {item.date}</span>
+          )}
+          {item.mileage?.total > 0 && (
+            <span className={styles.statItem}>
+              📏 {formatMiles(item.mileage.total)}
+              {item.mileage.hasUncachedDrive ? "~" : ""}
+            </span>
+          )}
+          {item.mileage?.drive > 0 && (
+            <span className={styles.statItem}>
+              🚗 {formatMiles(item.mileage.drive)}
+              {item.mileage.hasUncachedDrive ? "~" : ""}
+            </span>
+          )}
+          {item.mileage?.flight > 0 && (
+            <span className={styles.statItem}>
+              ✈️ {formatMiles(item.mileage.flight)}
+            </span>
+          )}
+          {item.mileage?.boat > 0 && (
+            <span className={styles.statItem}>
+              ⛵ {formatMiles(item.mileage.boat)}
+            </span>
+          )}
+          {item.mileage?.train > 0 && (
+            <span className={styles.statItem}>
+              🚞 {formatMiles(item.mileage.train)}
+            </span>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
 
-// ── Game polaroid pile ───────────────────────────────────────────
-function GamePolaroidPile({ item, dataUrls, animationKey }) {
-  const validUrls = dataUrls.filter(Boolean);
-  if (!validUrls.length) return null;
-
-  const OUTCOME_COLORS = { win: "#16a34a", loss: "#dc2626", tie: "#2563eb" };
-  const outcomeColor   = OUTCOME_COLORS[item.outcome] || "#555";
-
-  const title = `${item.homeTeam} vs ${item.visitingTeam}`;
+// ── Scrapbook header — game ─────────────────────────────────────
+function GameScrapbookHeader({ item }) {
+  const OUTCOME_COLORS = {
+    win:  { bg: "#d1fae5", border: "#6ee7b7", color: "#065f46" },
+    loss: { bg: "#fee2e2", border: "#fca5a5", color: "#7f1d1d" },
+    tie:  { bg: "#dbeafe", border: "#93c5fd", color: "#1e3a5f" },
+  };
+  const outcomeStyle = OUTCOME_COLORS[item.outcome] || null;
 
   const hasScore = item.homeScore != null && item.visitingScore != null;
 
+  const sportLabel = item.sport === "College" && item.collegeSport
+    ? `College ${item.collegeSport}`
+    : item.sport;
+
+  return (
+    <div className={styles.scrapbookHeader}>
+      <div className={styles.scrapbookInner}>
+        <h2 className={styles.scrapbookTitle}>
+          {item.homeTeam} vs {item.visitingTeam}
+        </h2>
+        <div className={styles.scrapbookStats}>
+          {outcomeStyle && item.outcome && (
+            <span
+              className={styles.outcomeBadge}
+              style={{
+                background:  outcomeStyle.bg,
+                border:      `1px solid ${outcomeStyle.border}`,
+                color:       outcomeStyle.color,
+              }}
+            >
+              {item.outcome.toUpperCase()}
+            </span>
+          )}
+          {hasScore && (
+            <span className={styles.statItem}>
+              {item.homeScore} – {item.visitingScore}
+            </span>
+          )}
+          {sportLabel && (
+            <span className={styles.statItem}>🏆 {sportLabel}</span>
+          )}
+          {item.date && (
+            <span className={styles.statItem}>📅 {item.date}</span>
+          )}
+          {item.venue && (
+            <span className={styles.statItem}>🏟️ {item.venue}</span>
+          )}
+          {!item.venue && item.city && (
+            <span className={styles.statItem}>📍 {item.city}</span>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Polaroid pile (shared render) ───────────────────────────────
+function PolaroidPile({ item, dataUrls, animationKey, header }) {
+  const validUrls = dataUrls.filter(Boolean);
+  if (!validUrls.length) return null;
+
   return (
     <div className={styles.polaroidScene}>
-      {validUrls.map((src, i) => {
-        const tilt      = seedTilt(item.id, i);
-        const transform = getSlotTransform(i, validUrls.length, tilt);
+      {/* Stats header — kraft paper panel at the bottom */}
+      {header}
 
-        return (
-          <div
-            key={`${animationKey}-${i}`}
-            className={styles.polaroid}
-            style={{
-              zIndex:              i + 1,
-              "--final-transform": transform,
-            }}
-          >
-            <img src={src} alt={title} className={styles.polaroidImg} />
+      {/* Polaroids floating in the upper stage */}
+      <div className={styles.polaroidStage}>
+        {validUrls.map((src, i) => {
+          const tilt      = seedTilt(item.id, i);
+          const transform = getSlotTransform(i, validUrls.length, tilt);
+          const label     = item.caption || "";
 
-            <div className={styles.polaroidCaption}>
-              {/* Teams */}
-              <p className={styles.polaroidTitle}>{title}</p>
-
-              {/* Sport */}
-              {item.sport && (
-                <p className={styles.polaroidMeta}>
-                  🏆 {item.sport === "College" && item.collegeSport
-                    ? `College ${item.collegeSport}`
-                    : item.sport}
-                </p>
-              )}
-
-              {/* Score */}
-              {hasScore && (
-                <p className={styles.polaroidMeta}>
-                  {item.homeScore} – {item.visitingScore}
-                </p>
-              )}
-
-              {/* Outcome */}
-              {item.outcome && (
-                <p
-                  className={styles.polaroidOutcome}
-                  style={{ color: outcomeColor }}
-                >
-                  {item.outcome.toUpperCase()}
-                </p>
-              )}
-
-              {/* Date */}
-              {item.date && (
-                <p className={styles.polaroidMeta}>📅 {item.date}</p>
-              )}
-
-              {/* Venue / city */}
-              {(item.venue || item.city) && (
-                <p className={styles.polaroidMeta}>
-                  📍 {item.venue || item.city}
-                </p>
-              )}
+          return (
+            <div
+              key={`${animationKey}-${i}`}
+              className={styles.polaroid}
+              style={{
+                zIndex:              i + 1,
+                "--final-transform": transform,
+              }}
+            >
+              <img
+                src={src}
+                alt={item.tripName || item.homeTeam || "Memory"}
+                className={styles.polaroidImg}
+              />
+              {/* Caption strip — empty until caption editing is built,
+                  shows caption text if one exists */}
+              <div className={styles.polaroidCaption}>
+                {label}
+              </div>
             </div>
-          </div>
-        );
-      })}
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -211,24 +214,19 @@ export default function SlideshowItem({ item, animationKey }) {
 
   // Still loading from IDB
   if (!dataUrls.length || dataUrls.every(u => !u)) {
-    return <div className={styles.polaroidScene} style={{ background: "#0a0a0a" }} />;
+    return <div className={styles.polaroidScene} />;
   }
 
-  if (item.source === "game") {
-    return (
-      <GamePolaroidPile
-        item={item}
-        dataUrls={dataUrls}
-        animationKey={animationKey}
-      />
-    );
-  }
+  const header = item.source === "game"
+    ? <GameScrapbookHeader item={item} />
+    : <TripScrapbookHeader item={item} />;
 
   return (
-    <TripPolaroidPile
+    <PolaroidPile
       item={item}
       dataUrls={dataUrls}
       animationKey={animationKey}
+      header={header}
     />
   );
 }
