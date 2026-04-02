@@ -2,6 +2,7 @@
 //
 // Local upload only — Google Photos integration removed.
 // Photos are saved to IndexedDB via photoStorage.js.
+// Caption editing: pencil icon on hover → inline input below thumbnail.
 
 import { useRef, useState, useEffect } from "react";
 import styles from "./PhotoGrid.module.css";
@@ -9,9 +10,11 @@ import { savePhoto, getPhotos, deletePhoto } from "@/utils/photoStorage";
 
 export default function PhotoGrid({ photos = [], onChange, maxPreview = 5 }) {
   const fileInputRef              = useRef(null);
-  const [uploading,   setUploading]   = useState(false);
-  const [uploadError, setUploadError] = useState(null);
-  const [photoUrls,   setPhotoUrls]   = useState({});
+  const [uploading,    setUploading]    = useState(false);
+  const [uploadError,  setUploadError]  = useState(null);
+  const [photoUrls,    setPhotoUrls]    = useState({});
+  const [editingId,    setEditingId]    = useState(null); // which photo caption is open
+  const [draftCaption, setDraftCaption] = useState("");
 
   // Load dataUrls from IndexedDB whenever the photo list changes
   useEffect(() => {
@@ -58,9 +61,28 @@ export default function PhotoGrid({ photos = [], onChange, maxPreview = 5 }) {
   }
 
   async function removePhoto(id) {
+    // Close caption editor if this photo was being edited
+    if (editingId === id) setEditingId(null);
     await deletePhoto(id);
     setPhotoUrls(prev => { const n = { ...prev }; delete n[id]; return n; });
     onChange(photos.filter(p => p.id !== id));
+  }
+
+  function openCaption(photo) {
+    setEditingId(photo.id);
+    setDraftCaption(photo.caption || "");
+  }
+
+  function saveCaption(id) {
+    onChange(photos.map(p =>
+      p.id === id ? { ...p, caption: draftCaption.trim() } : p
+    ));
+    setEditingId(null);
+  }
+
+  function handleCaptionKeyDown(e, id) {
+    if (e.key === "Enter")  { e.preventDefault(); saveCaption(id); }
+    if (e.key === "Escape") { setEditingId(null); }
   }
 
   return (
@@ -73,38 +95,76 @@ export default function PhotoGrid({ photos = [], onChange, maxPreview = 5 }) {
 
       <div className={styles.grid}>
         {photos.map(photo => {
-          const src = photoUrls[photo.id];
+          const src       = photoUrls[photo.id];
+          const isEditing = editingId === photo.id;
+          const hasCaption = photo.caption && photo.caption.trim().length > 0;
+
           return (
-            <div key={photo.id} className={styles.thumb}>
-              {src ? (
-                <img
-                  src={src}
-                  alt={photo.caption || photo.name || "Photo"}
-                  onError={e => { e.target.style.display = "none"; }}
-                />
-              ) : (
-                <div style={{
-                  width:           "100%",
-                  height:          "100%",
-                  background:      "var(--color-surface-2)",
-                  display:         "flex",
-                  alignItems:      "center",
-                  justifyContent:  "center",
-                  fontSize:        10,
-                  color:           "var(--color-text-subtle)",
-                }}>…</div>
-              )}
-              <div className={styles.thumbOverlay}>
-                <button
-                  className={styles.removeBtn}
-                  onClick={() => removePhoto(photo.id)}
-                  title="Remove photo"
-                >✕</button>
+            <div key={photo.id} className={styles.thumbWrap}>
+              {/* Thumbnail */}
+              <div className={styles.thumb}>
+                {src ? (
+                  <img
+                    src={src}
+                    alt={photo.caption || photo.name || "Photo"}
+                    onError={e => { e.target.style.display = "none"; }}
+                  />
+                ) : (
+                  <div className={styles.thumbPlaceholder}>…</div>
+                )}
+
+                {/* Hover overlay — remove + pencil */}
+                <div className={styles.thumbOverlay}>
+                  {/* Pencil / caption button */}
+                  <button
+                    className={`${styles.captionBtn} ${isEditing ? styles.captionBtnActive : ""}`}
+                    onClick={() => isEditing ? saveCaption(photo.id) : openCaption(photo)}
+                    title={isEditing ? "Save caption" : "Add caption"}
+                  >
+                    ✏
+                  </button>
+
+                  {/* Remove button */}
+                  <button
+                    className={styles.removeBtn}
+                    onClick={() => removePhoto(photo.id)}
+                    title="Remove photo"
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                {/* Caption indicator dot — visible when caption exists and not editing */}
+                {hasCaption && !isEditing && (
+                  <div className={styles.captionDot} title={photo.caption} />
+                )}
               </div>
+
+              {/* Inline caption editor — slides open below thumbnail */}
+              {isEditing && (
+                <div className={styles.captionEditor}>
+                  <input
+                    autoFocus
+                    className={styles.captionInput}
+                    value={draftCaption}
+                    onChange={e => setDraftCaption(e.target.value)}
+                    onKeyDown={e => handleCaptionKeyDown(e, photo.id)}
+                    onBlur={() => saveCaption(photo.id)}
+                    placeholder="Add a caption…"
+                    maxLength={120}
+                  />
+                </div>
+              )}
+
+              {/* Caption preview below thumb when not editing */}
+              {hasCaption && !isEditing && (
+                <p className={styles.captionPreview}>{photo.caption}</p>
+              )}
             </div>
           );
         })}
 
+        {/* Add button */}
         <button
           className={styles.addBtn}
           onClick={() => fileInputRef.current?.click()}

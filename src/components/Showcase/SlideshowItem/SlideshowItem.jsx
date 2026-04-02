@@ -7,16 +7,12 @@ import { getPhotos } from "@/utils/photoStorage";
 import { formatMiles } from "@/utils/haversine";
 
 // ── Scatter layout helpers ───────────────────────────────────────
-//
-// Each slot gets a deliberate position within the polaroidStage so
-// cards are always visibly separated. Tilt is seeded-deterministic
-// so the same item always lands at the same angle.
 
 function getSlotTransform(slotIndex, totalCount, tiltDeg) {
   const offsets = {
     1: [{ x: 0,    y: 0   }],
     2: [{ x: -170, y: -15 }, { x: 170,  y: 15  }],
-    3: [{ x: -230, y: 10  }, { x: 0,    y: -25 }, { x: 230, y: 12 }],
+    3: [{ x: -300, y: 10  }, { x: 0,    y: -25 }, { x: 300, y: 12 }],
   };
   const pos = (offsets[totalCount] || offsets[1])[slotIndex] || { x: 0, y: 0 };
   return `translate(${pos.x}px, ${pos.y}px) rotate(${tiltDeg}deg)`;
@@ -29,12 +25,21 @@ function seedTilt(id, index) {
     hash = (hash * 31 + str.charCodeAt(i)) & 0xffffffff;
   }
   const norm = ((hash >>> 0) % 1000) / 1000;
-  return ((norm * 14) - 7).toFixed(2); // -7deg to +7deg
+  return ((norm * 14) - 7).toFixed(2);
 }
 
-// ── Scrapbook header — trip/stop ────────────────────────────────
+// ── Build ordered photo list for a slide ────────────────────────
+// Slot 0 = the hero photo for this item, slots 1-2 = siblings.
+// Returns array of { id, caption } in slot order.
+function buildSlotPhotos(item) {
+  const hero     = { id: item.photoId, caption: item.caption || "" };
+  const siblings = (item.siblingPhotos || []).slice(0, 2);
+  return [hero, ...siblings];
+}
+
+// ── Scrapbook header — trip/stop ─────────────────────────────────
 function TripScrapbookHeader({ item }) {
-  const isStop = item.source === "stop" && item.stopName;
+  const isStop   = item.source === "stop" && item.stopName;
   const title    = isStop ? item.stopName : item.tripName;
   const subtitle = isStop ? item.tripName : null;
 
@@ -62,19 +67,13 @@ function TripScrapbookHeader({ item }) {
             </span>
           )}
           {item.mileage?.flight > 0 && (
-            <span className={styles.statItem}>
-              ✈️ {formatMiles(item.mileage.flight)}
-            </span>
+            <span className={styles.statItem}>✈️ {formatMiles(item.mileage.flight)}</span>
           )}
           {item.mileage?.boat > 0 && (
-            <span className={styles.statItem}>
-              ⛵ {formatMiles(item.mileage.boat)}
-            </span>
+            <span className={styles.statItem}>⛵ {formatMiles(item.mileage.boat)}</span>
           )}
           {item.mileage?.train > 0 && (
-            <span className={styles.statItem}>
-              🚞 {formatMiles(item.mileage.train)}
-            </span>
+            <span className={styles.statItem}>🚞 {formatMiles(item.mileage.train)}</span>
           )}
         </div>
       </div>
@@ -82,7 +81,7 @@ function TripScrapbookHeader({ item }) {
   );
 }
 
-// ── Scrapbook header — game ─────────────────────────────────────
+// ── Scrapbook header — game ──────────────────────────────────────
 function GameScrapbookHeader({ item }) {
   const OUTCOME_COLORS = {
     win:  { bg: "#d1fae5", border: "#6ee7b7", color: "#065f46" },
@@ -90,10 +89,8 @@ function GameScrapbookHeader({ item }) {
     tie:  { bg: "#dbeafe", border: "#93c5fd", color: "#1e3a5f" },
   };
   const outcomeStyle = OUTCOME_COLORS[item.outcome] || null;
-
-  const hasScore = item.homeScore != null && item.visitingScore != null;
-
-  const sportLabel = item.sport === "College" && item.collegeSport
+  const hasScore     = item.homeScore != null && item.visitingScore != null;
+  const sportLabel   = item.sport === "College" && item.collegeSport
     ? `College ${item.collegeSport}`
     : item.sport;
 
@@ -108,9 +105,9 @@ function GameScrapbookHeader({ item }) {
             <span
               className={styles.outcomeBadge}
               style={{
-                background:  outcomeStyle.bg,
-                border:      `1px solid ${outcomeStyle.border}`,
-                color:       outcomeStyle.color,
+                background: outcomeStyle.bg,
+                border:     `1px solid ${outcomeStyle.border}`,
+                color:      outcomeStyle.color,
               }}
             >
               {item.outcome.toUpperCase()}
@@ -139,22 +136,24 @@ function GameScrapbookHeader({ item }) {
   );
 }
 
-// ── Polaroid pile (shared render) ───────────────────────────────
-function PolaroidPile({ item, dataUrls, animationKey, header }) {
-  const validUrls = dataUrls.filter(Boolean);
-  if (!validUrls.length) return null;
+// ── Polaroid pile ────────────────────────────────────────────────
+function PolaroidPile({ item, slotPhotos, dataUrls, animationKey, header }) {
+  const slots = slotPhotos
+    .map((photo, i) => ({ photo, url: dataUrls[i] || null }))
+    .filter(slot => slot.url);
+
+  if (!slots.length) return null;
+
+  const altText = item.tripName || item.homeTeam || "Memory";
 
   return (
     <div className={styles.polaroidScene}>
-      {/* Stats header — kraft paper panel at the bottom */}
       {header}
 
-      {/* Polaroids floating in the upper stage */}
       <div className={styles.polaroidStage}>
-        {validUrls.map((src, i) => {
+        {slots.map(({ photo, url }, i) => {
           const tilt      = seedTilt(item.id, i);
-          const transform = getSlotTransform(i, validUrls.length, tilt);
-          const label     = item.caption || "";
+          const transform = getSlotTransform(i, slots.length, tilt);
 
           return (
             <div
@@ -165,15 +164,11 @@ function PolaroidPile({ item, dataUrls, animationKey, header }) {
                 "--final-transform": transform,
               }}
             >
-              <img
-                src={src}
-                alt={item.tripName || item.homeTeam || "Memory"}
-                className={styles.polaroidImg}
-              />
-              {/* Caption strip — empty until caption editing is built,
-                  shows caption text if one exists */}
+              <img src={url} alt={altText} className={styles.polaroidImg} />
+
+              {/* Each polaroid shows its own photo's caption */}
               <div className={styles.polaroidCaption}>
-                {label}
+                {photo.caption || ""}
               </div>
             </div>
           );
@@ -185,22 +180,25 @@ function PolaroidPile({ item, dataUrls, animationKey, header }) {
 
 // ── Main component ───────────────────────────────────────────────
 export default function SlideshowItem({ item, animationKey }) {
-  const [dataUrls, setDataUrls] = useState([]);
+  const [dataUrls,   setDataUrls]   = useState([]);
+  const [slotPhotos, setSlotPhotos] = useState([]);
 
   useEffect(() => {
-    if (!item?.photoId) { setDataUrls([]); return; }
+    if (!item?.photoId) { setDataUrls([]); setSlotPhotos([]); return; }
     let cancelled = false;
 
-    const ids = item.siblingPhotoIds?.length
-      ? [item.photoId, ...item.siblingPhotoIds].slice(0, 3)
-      : [item.photoId];
+    const slots = buildSlotPhotos(item);
+    const ids   = slots.map(p => p.id);
 
     getPhotos(ids).then(map => {
-      if (!cancelled) setDataUrls(ids.map(id => map.get(id) || null));
+      if (!cancelled) {
+        setSlotPhotos(slots);
+        setDataUrls(ids.map(id => map.get(id) || null));
+      }
     });
 
     return () => { cancelled = true; };
-  }, [item?.photoId, item?.siblingPhotoIds]);
+  }, [item?.photoId, item?.caption, item?.siblingPhotos]);
 
   if (!item) return null;
 
@@ -212,7 +210,6 @@ export default function SlideshowItem({ item, animationKey }) {
     return <div className={styles.fallbackWrap}><GameFallbackCard item={item} /></div>;
   }
 
-  // Still loading from IDB
   if (!dataUrls.length || dataUrls.every(u => !u)) {
     return <div className={styles.polaroidScene} />;
   }
@@ -224,6 +221,7 @@ export default function SlideshowItem({ item, animationKey }) {
   return (
     <PolaroidPile
       item={item}
+      slotPhotos={slotPhotos}
       dataUrls={dataUrls}
       animationKey={animationKey}
       header={header}

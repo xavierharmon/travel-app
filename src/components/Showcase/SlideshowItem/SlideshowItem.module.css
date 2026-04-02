@@ -24,7 +24,7 @@
   top:      0;
   left:     0;
   right:    0;
-  bottom:   20%;           /* leave room for scrapbook header */
+  bottom:   38%;           /* leave room for scrapbook header */
   display:  flex;
   align-items:     center;
   justify-content: center;
@@ -70,16 +70,19 @@
 
 /* ── Polaroid caption (photo caption only, no stats) ── */
 .polaroidCaption {
-  padding-top:  8px;
-  min-height:   28px;
-  font-family:  'Caveat', cursive;
-  font-size:    clamp(12px, 1.4vw, 16px);
-  color:        #555;
-  text-align:   center;
-  white-space:  nowrap;
-  overflow:     hidden;
+  padding-top:   12px;
+  min-height:    28px;
+  font-family:   'Caveat', cursive;
+  font-size:     clamp(15px, 1.6vw,25px);
+  font-weight:   700;
+  color:         #555;
+  text-align:    center;
+  font-style:    italic;
+  white-space:   wrap;
+  overflow:      hidden;
   text-overflow: ellipsis;
-  font-style:   italic;
+  line-height:   1.3;
+  letter-spacing: 0.08em;
 }
 
 /* ── Scrapbook header panel ──────────────────── */
@@ -90,7 +93,7 @@
   bottom:     0;
   left:       0;
   right:      0;
-  height:    25%;
+  height:     25%;
   background: #f5f0e8;
   font-family: 'Caveat', cursive;
 
@@ -240,8 +243,8 @@
 .scrapbookHeader::after {
   content:          "";
   position:         absolute;
-  top:              10%;
-  width:            clamp(100px, 6vw, 100px);
+  top:              12%;
+  width:            clamp(40px, 5vw, 70px);
   height:           clamp(14px, 2vw, 22px);
   background:       rgba(255, 230, 120, 0.55);
   border:           1px solid rgba(200, 170, 60, 0.3);

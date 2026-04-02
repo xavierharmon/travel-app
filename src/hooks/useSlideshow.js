@@ -1,7 +1,8 @@
 // src/hooks/useSlideshow.js
 //
-// Updated: photo items in the pool carry only the photo ID (not dataUrl).
-// SlideshowItem resolves the dataUrl from IndexedDB via usePhotoUrls.
+// Each photo item carries siblingPhotos — an array of {id, caption}
+// for the other photos in the same trip/stop/game, so the slideshow
+// can display the correct caption per polaroid slot.
 
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { computeTripMileage } from "@/utils/tripMileage";
@@ -34,43 +35,58 @@ function buildTripItems(trips) {
 
     let photoCount = 0;
 
-    for (const photo of trip.photos || []) {
-      if (!photo?.id) continue;
-      const tripPhotoIds = (trip.photos || []).map(p => p.id).filter(Boolean);
-        items.push({
-          kind:            "photo",
-          id:              `trip-${trip.id}-photo-${photo.id}`,
-          photoId:         photo.id,
-          siblingPhotoIds: tripPhotoIds.filter(id => id !== photo.id).slice(0, 2),
-          caption:         photo.caption || null,
-          source:          "trip",
-          ...baseCtx,
-        });
+    // ── Trip-level photos ──────────────────────────────────────
+    const tripPhotos = (trip.photos || []).filter(p => p?.id);
+
+    for (const photo of tripPhotos) {
+      // Siblings are the OTHER photos in this same trip-level set
+      const siblings = tripPhotos
+        .filter(p => p.id !== photo.id)
+        .slice(0, 2)
+        .map(p => ({ id: p.id, caption: p.caption || "" }));
+
+      items.push({
+        kind:          "photo",
+        id:            `trip-${trip.id}-photo-${photo.id}`,
+        photoId:       photo.id,
+        caption:       photo.caption || "",
+        siblingPhotos: siblings,
+        source:        "trip",
+        ...baseCtx,
+      });
       photoCount++;
     }
 
+    // ── Stop-level photos ──────────────────────────────────────
     for (const stop of trip.stops || []) {
-      for (const photo of stop.photos || []) {
-        if (!photo?.id) continue;
-        const stopPhotoIds = (stop.photos || []).map(p => p.id).filter(Boolean);
+      const stopPhotos = (stop.photos || []).filter(p => p?.id);
+
+      for (const photo of stopPhotos) {
+        const siblings = stopPhotos
+          .filter(p => p.id !== photo.id)
+          .slice(0, 2)
+          .map(p => ({ id: p.id, caption: p.caption || "" }));
+
         items.push({
-          kind:            "photo",
-          id:              `trip-${trip.id}-stop-${stop.id}-photo-${photo.id}`,
-          photoId:         photo.id,
-          siblingPhotoIds: stopPhotoIds.filter(id => id !== photo.id).slice(0, 2),
-          caption:         photo.caption || null,
-          source:          "stop",
-          stopName:        stop.name?.split(",")[0] || null,
+          kind:          "photo",
+          id:            `trip-${trip.id}-stop-${stop.id}-photo-${photo.id}`,
+          photoId:       photo.id,
+          caption:       photo.caption || "",
+          siblingPhotos: siblings,
+          source:        "stop",
+          stopName:      stop.name?.split(",")[0] || null,
           ...baseCtx,
         });
         photoCount++;
       }
     }
 
+    // ── Fallback if no photos at all ───────────────────────────
     if (photoCount === 0) {
       items.push({
-        kind: "trip_fallback",
-        id:   `trip-${trip.id}-fallback`,
+        kind:          "trip_fallback",
+        id:            `trip-${trip.id}-fallback`,
+        siblingPhotos: [],
         ...baseCtx,
       });
     }
@@ -95,28 +111,33 @@ function buildGameItems(games) {
       venue:            game.venue            || null,
       city:             game.city             || null,
       sport:            game.sport            || null,
+      collegeSport:     game.collegeSport     || null,
     };
 
-    const photos = game.photos || [];
+    const gamePhotos = (game.photos || []).filter(p => p?.id);
 
-    for (const photo of photos) {
-      if (!photo?.id) continue;
-      const gamePhotoIds = (game.photos || []).map(p => p.id).filter(Boolean);
+    for (const photo of gamePhotos) {
+      const siblings = gamePhotos
+        .filter(p => p.id !== photo.id)
+        .slice(0, 2)
+        .map(p => ({ id: p.id, caption: p.caption || "" }));
+
       items.push({
-        kind:            "photo",
-        id:              `game-${game.id}-photo-${photo.id}`,
-        photoId:         photo.id,
-        siblingPhotoIds: gamePhotoIds.filter(id => id !== photo.id).slice(0, 2),
-        caption:         photo.caption || null,
-        source:          "game",
+        kind:          "photo",
+        id:            `game-${game.id}-photo-${photo.id}`,
+        photoId:       photo.id,
+        caption:       photo.caption || "",
+        siblingPhotos: siblings,
+        source:        "game",
         ...baseCtx,
       });
     }
 
-    if (photos.length === 0) {
+    if (gamePhotos.length === 0) {
       items.push({
-        kind: "game_fallback",
-        id:   `game-${game.id}-fallback`,
+        kind:          "game_fallback",
+        id:            `game-${game.id}-fallback`,
+        siblingPhotos: [],
         ...baseCtx,
       });
     }
