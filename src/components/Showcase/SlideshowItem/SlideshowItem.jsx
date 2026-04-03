@@ -11,8 +11,8 @@ import { formatMiles } from "@/utils/haversine";
 function getSlotTransform(slotIndex, totalCount, tiltDeg) {
   const offsets = {
     1: [{ x: 0,    y: 0   }],
-    2: [{ x: -170, y: -15 }, { x: 170,  y: 15  }],
-    3: [{ x: -300, y: 10  }, { x: 0,    y: -25 }, { x: 300, y: 12 }],
+    2: [{ x: -220, y: -15 }, { x: 220,  y: 15  }],
+    3: [{ x: -375, y: 10  }, { x: 0,    y: -25 }, { x: 375, y: 12 }],
   };
   const pos = (offsets[totalCount] || offsets[1])[slotIndex] || { x: 0, y: 0 };
   return `translate(${pos.x}px, ${pos.y}px) rotate(${tiltDeg}deg)`;
