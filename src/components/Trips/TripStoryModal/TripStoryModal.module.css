@@ -1,0 +1,396 @@
+/* src/components/Trips/TripStoryModal/TripStoryModal.module.css */
+@import url('https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;1,400;1,600&family=Caveat:wght@400;600;700&display=swap');
+
+/* ── Overlay ─────────────────────────────────── */
+.overlay {
+  position:        fixed;
+  inset:           0;
+  background:      rgba(0, 0, 0, 0.75);
+  display:         flex;
+  align-items:     center;
+  justify-content: center;
+  z-index:         1100;
+  padding:         var(--space-md);
+  backdrop-filter: blur(4px);
+  animation:       fadeIn 0.25s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* ── Journal book ────────────────────────────── */
+.journal {
+  position:       relative;
+  background:     #faf8f3;
+  border-radius:  4px;
+  width:          100%;
+  max-width:      680px;
+  max-height:     90vh;
+  overflow-y:     auto;
+  box-shadow:     -6px 0 0 #c8a96e, 0 20px 60px rgba(0,0,0,0.6), 4px 4px 0 rgba(0,0,0,0.15);
+  animation:      slideUp 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+
+  /* Subtle paper texture via repeating gradient */
+  background-image:
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 27px,
+      rgba(180, 160, 120, 0.08) 27px,
+      rgba(180, 160, 120, 0.08) 28px
+    ),
+    linear-gradient(135deg, #faf8f3 0%, #f5f0e8 100%);
+}
+
+@keyframes slideUp {
+  from { transform: translateY(24px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+/* Scrollbar */
+.journal::-webkit-scrollbar       { width: 5px; }
+.journal::-webkit-scrollbar-track { background: #e8e0d0; }
+.journal::-webkit-scrollbar-thumb { background: #c8a96e; border-radius: 3px; }
+
+/* ── Spine ───────────────────────────────────── */
+.spine {
+  position:   absolute;
+  top:        0;
+  left:       0;
+  bottom:     0;
+  width:      6px;
+  background: linear-gradient(180deg, #b8924a 0%, #c8a96e 40%, #b8924a 100%);
+  border-radius: 4px 0 0 4px;
+}
+
+/* ── Close button ────────────────────────────── */
+.closeBtn {
+  position:      absolute;
+  top:           var(--space-md);
+  right:         var(--space-md);
+  width:         32px;
+  height:        32px;
+  border-radius: 50%;
+  background:    rgba(0,0,0,0.08);
+  border:        none;
+  color:         #7a6a52;
+  font-size:     14px;
+  display:       flex;
+  align-items:   center;
+  justify-content: center;
+  cursor:        pointer;
+  transition:    background 0.15s ease, color 0.15s ease;
+  z-index:       10;
+  font-family:   var(--font-sans);
+  line-height:   1;
+}
+
+.closeBtn:hover { background: rgba(0,0,0,0.18); color: #2a1f12; }
+
+/* ── Journal header ──────────────────────────── */
+.journalHeader {
+  padding: 36px 48px 24px 40px;
+}
+
+.journalMeta {
+  display:     flex;
+  align-items: center;
+  gap:         12px;
+  margin-bottom: 10px;
+}
+
+.journalDate {
+  font-family:    'Caveat', cursive;
+  font-size:      15px;
+  color:          #9a8060;
+  letter-spacing: 0.05em;
+  flex-shrink:    0;
+}
+
+.journalRule {
+  flex:           1;
+  height:         1px;
+  background:     linear-gradient(90deg, #c8a96e, transparent);
+}
+
+.journalTitle {
+  font-family: 'Lora', serif;
+  font-size:   clamp(24px, 4vw, 36px);
+  font-weight: 600;
+  color:       #1a1208;
+  margin:      0 0 16px;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+}
+
+.journalIntro {
+  font-family: 'Lora', serif;
+  font-size:   15px;
+  color:       #5a4a36;
+  line-height: 1.8;
+  margin:      0;
+  font-style:  italic;
+}
+
+/* ── Hero photo section ───────────────────────── */
+.heroSection {
+  padding:    0 40px 28px 40px;
+  display:    flex;
+  flex-direction: column;
+  gap:        12px;
+}
+
+.heroMain {
+  position:      relative;
+  border-radius: 3px;
+  overflow:      hidden;
+  box-shadow:    2px 4px 16px rgba(0,0,0,0.2), 0 0 0 1px rgba(0,0,0,0.06);
+}
+
+.heroImg {
+  display:    block;
+  width:      100%;
+  max-height: 380px;
+  object-fit: cover;
+}
+
+.heroCaption {
+  font-family: 'Caveat', cursive;
+  font-size:   14px;
+  color:       #7a6a52;
+  text-align:  center;
+  padding:     8px 12px 4px;
+  margin:      0;
+  font-style:  italic;
+  background:  rgba(0,0,0,0.02);
+  border-top:  1px solid rgba(0,0,0,0.05);
+}
+
+/* Thumbnail rail */
+.heroRail {
+  display:   flex;
+  gap:       8px;
+  flex-wrap: wrap;
+}
+
+.heroThumb {
+  width:         60px;
+  height:        48px;
+  border-radius: 2px;
+  overflow:      hidden;
+  border:        2px solid transparent;
+  padding:       0;
+  cursor:        pointer;
+  transition:    border-color 0.15s ease, transform 0.15s ease;
+  flex-shrink:   0;
+  opacity:       0.65;
+}
+
+.heroThumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+.heroThumb:hover        { opacity: 0.85; transform: translateY(-1px); }
+.heroThumbActive        {
+  border-color: #c8a96e !important;
+  opacity:      1 !important;
+  box-shadow:   0 2px 8px rgba(0,0,0,0.2);
+}
+
+/* ── Section divider ─────────────────────────── */
+.sectionDivider {
+  display:     flex;
+  align-items: center;
+  gap:         16px;
+  padding:     0 40px 20px;
+}
+
+.sectionDivider::before,
+.sectionDivider::after {
+  content:    "";
+  flex:       1;
+  height:     1px;
+  background: linear-gradient(90deg, transparent, #c8a96e, transparent);
+}
+
+.sectionDivider span {
+  font-family:    'Caveat', cursive;
+  font-size:      13px;
+  font-weight:    600;
+  color:          #9a8060;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  white-space:    nowrap;
+}
+
+/* ── Stops section ───────────────────────────── */
+.stopsSection {
+  padding: 0 40px 8px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Single stop entry ───────────────────────── */
+.stopEntry {
+  display: flex;
+  gap:     16px;
+  padding-bottom: 28px;
+}
+
+/* Timeline column */
+.stopTimeline {
+  display:        flex;
+  flex-direction: column;
+  align-items:    center;
+  flex-shrink:    0;
+  padding-top:    4px;
+  width:          20px;
+}
+
+.stopDot {
+  width:         12px;
+  height:        12px;
+  border-radius: 50%;
+  flex-shrink:   0;
+  box-shadow:    0 0 0 3px rgba(255,255,255,0.8), 0 0 0 4px rgba(0,0,0,0.1);
+}
+
+.stopLine {
+  width:      1px;
+  flex:       1;
+  min-height: 20px;
+  margin-top: 6px;
+  background: repeating-linear-gradient(
+    180deg,
+    #c8a96e 0px,
+    #c8a96e 4px,
+    transparent 4px,
+    transparent 10px
+  );
+}
+
+/* Stop body */
+.stopBody { flex: 1; min-width: 0; }
+
+.stopHeader {
+  display:     flex;
+  align-items: baseline;
+  gap:         10px;
+  flex-wrap:   wrap;
+  margin-bottom: 8px;
+}
+
+.stopName {
+  font-family: 'Lora', serif;
+  font-size:   17px;
+  font-weight: 600;
+  color:       #1a1208;
+  margin:      0;
+  line-height: 1.3;
+}
+
+.modeBadge {
+  font-family:   'Caveat', cursive;
+  font-size:     12px;
+  font-weight:   600;
+  border:        1px solid;
+  border-radius: 10px;
+  padding:       1px 8px;
+  flex-shrink:   0;
+  opacity:       0.85;
+}
+
+.originTag,
+.destTag {
+  font-family:   'Caveat', cursive;
+  font-size:     11px;
+  font-weight:   700;
+  padding:       1px 8px;
+  border-radius: 10px;
+  letter-spacing: 0.05em;
+  flex-shrink:   0;
+}
+
+.originTag { background: rgba(34,197,94,0.12);  color: #166534; }
+.destTag   { background: rgba(239,68,68,0.12);  color: #7f1d1d; }
+
+.stopDesc {
+  font-family: 'Lora', serif;
+  font-size:   14px;
+  color:       #5a4a36;
+  line-height: 1.75;
+  margin:      0 0 12px;
+}
+
+/* Stop photos */
+.stopPhotos {
+  display:   flex;
+  gap:       8px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+
+.stopPhotoWrap {
+  display:        flex;
+  flex-direction: column;
+  gap:            4px;
+  flex-shrink:    0;
+}
+
+.stopPhoto {
+  width:         110px;
+  height:        80px;
+  object-fit:    cover;
+  border-radius: 2px;
+  box-shadow:    1px 2px 8px rgba(0,0,0,0.15);
+  display:       block;
+}
+
+.stopPhotoCaption {
+  font-family: 'Caveat', cursive;
+  font-size:   11px;
+  color:       #9a8060;
+  text-align:  center;
+  margin:      0;
+  width:       110px;
+  white-space: nowrap;
+  overflow:    hidden;
+  text-overflow: ellipsis;
+  font-style:  italic;
+}
+
+/* ── Empty state ─────────────────────────────── */
+.emptyStory {
+  padding:         48px 40px;
+  text-align:      center;
+  display:         flex;
+  flex-direction:  column;
+  align-items:     center;
+  gap:             12px;
+}
+
+.emptyStory span { font-size: 40px; }
+
+.emptyStory p {
+  font-family: 'Lora', serif;
+  font-size:   15px;
+  color:       #9a8060;
+  margin:      0;
+  font-style:  italic;
+  max-width:   360px;
+  line-height: 1.7;
+}
+
+/* ── Footer decoration ───────────────────────── */
+.journalFooter {
+  padding:    16px 40px 28px;
+  display:    flex;
+  align-items: center;
+}
+
+.journalFooterLine {
+  width:      100%;
+  height:     1px;
+  background: linear-gradient(90deg, transparent, #c8a96e 30%, #c8a96e 70%, transparent);
+  opacity:    0.5;
+}

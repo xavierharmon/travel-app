@@ -1,4 +1,9 @@
 // src/components/Showcase/SlideshowItem/SlideshowItem.jsx
+//
+// Updated: adds a floating journal note card (off to the side)
+// showing the stop/trip description when one exists.
+// The polaroid pile and scrapbook header are unchanged.
+
 import { useEffect, useState } from "react";
 import styles from "./SlideshowItem.module.css";
 import TripFallbackCard from "@/components/Showcase/TripFallbackCard";
@@ -28,13 +33,63 @@ function seedTilt(id, index) {
   return ((norm * 14) - 7).toFixed(2);
 }
 
+// Deterministic side (left or right) based on item id
+function journalSide(id) {
+  let hash = 0;
+  for (let i = 0; i < id.length; i++) {
+    hash = (hash * 31 + id.charCodeAt(i)) & 0xffffffff;
+  }
+  return (hash >>> 0) % 2 === 0 ? "left" : "right";
+}
+
+// Slight tilt for the journal note
+function journalTilt(id) {
+  let hash = 0;
+  const str = `${id}-journal`;
+  for (let i = 0; i < str.length; i++) {
+    hash = (hash * 31 + str.charCodeAt(i)) & 0xffffffff;
+  }
+  const norm = ((hash >>> 0) % 1000) / 1000;
+  return ((norm * 6) - 3).toFixed(2); // -3deg to +3deg
+}
+
 // ── Build ordered photo list for a slide ────────────────────────
-// Slot 0 = the hero photo for this item, slots 1-2 = siblings.
-// Returns array of { id, caption } in slot order.
 function buildSlotPhotos(item) {
   const hero     = { id: item.photoId, caption: item.caption || "" };
   const siblings = (item.siblingPhotos || []).slice(0, 2);
   return [hero, ...siblings];
+}
+
+// ── Floating journal note ────────────────────────────────────────
+function JournalNote({ item, animationKey }) {
+  const text = item.source === "stop"
+    // For stop photos, look for stop description — passed through pool item
+    ? (item.stopDescription || null)
+    : null; // trip-level photos don't show a note (header covers it)
+
+  if (!text) return null;
+
+  const side = journalSide(item.id);
+  const tilt = journalTilt(item.id);
+
+  return (
+    <div
+      key={`note-${animationKey}`}
+      className={`${styles.journalNote} ${side === "left" ? styles.journalNoteLeft : styles.journalNoteRight}`}
+      style={{ "--note-tilt": `${tilt}deg` }}
+    >
+      {/* Tape strip decoration */}
+      <div className={styles.noteTape} />
+
+      {/* Stop name as note header */}
+      {item.stopName && (
+        <p className={styles.noteLocation}>📍 {item.stopName}</p>
+      )}
+
+      {/* The story text */}
+      <p className={styles.noteText}>{text}</p>
+    </div>
+  );
 }
 
 // ── Scrapbook header — trip/stop ─────────────────────────────────
@@ -149,6 +204,11 @@ function PolaroidPile({ item, slotPhotos, dataUrls, animationKey, header }) {
   return (
     <div className={styles.polaroidScene}>
       {header}
+
+      {/* Floating journal note for stops with descriptions */}
+      {item.source !== "game" && (
+        <JournalNote item={item} animationKey={animationKey} />
+      )}
 
       <div className={styles.polaroidStage}>
         {slots.map(({ photo, url }, i) => {

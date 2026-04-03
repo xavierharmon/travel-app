@@ -219,3 +219,19 @@
   font-size: 11px;
   color:     var(--color-text-subtle);
 }
+
+.storyLink {
+  font-size:       11px;
+  color:           var(--color-primary-light);
+  background:      none;
+  border:          none;
+  cursor:          pointer;
+  padding:         0;
+  font-family:     var(--font-sans);
+  margin-left:     auto;
+  transition:      color var(--transition);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+ 
+.storyLink:hover { color: var(--color-text); }

@@ -1,8 +1,7 @@
 // src/hooks/useSlideshow.js
 //
-// Each photo item carries siblingPhotos — an array of {id, caption}
-// for the other photos in the same trip/stop/game, so the slideshow
-// can display the correct caption per polaroid slot.
+// Updated: stop-level items now carry stopDescription so the
+// SlideshowItem can render the floating journal note.
 
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { computeTripMileage } from "@/utils/tripMileage";
@@ -39,19 +38,19 @@ function buildTripItems(trips) {
     const tripPhotos = (trip.photos || []).filter(p => p?.id);
 
     for (const photo of tripPhotos) {
-      // Siblings are the OTHER photos in this same trip-level set
       const siblings = tripPhotos
         .filter(p => p.id !== photo.id)
         .slice(0, 2)
         .map(p => ({ id: p.id, caption: p.caption || "" }));
 
       items.push({
-        kind:          "photo",
-        id:            `trip-${trip.id}-photo-${photo.id}`,
-        photoId:       photo.id,
-        caption:       photo.caption || "",
-        siblingPhotos: siblings,
-        source:        "trip",
+        kind:             "photo",
+        id:               `trip-${trip.id}-photo-${photo.id}`,
+        photoId:          photo.id,
+        caption:          photo.caption || "",
+        siblingPhotos:    siblings,
+        source:           "trip",
+        stopDescription:  null, // trip-level — no stop note
         ...baseCtx,
       });
       photoCount++;
@@ -68,13 +67,14 @@ function buildTripItems(trips) {
           .map(p => ({ id: p.id, caption: p.caption || "" }));
 
         items.push({
-          kind:          "photo",
-          id:            `trip-${trip.id}-stop-${stop.id}-photo-${photo.id}`,
-          photoId:       photo.id,
-          caption:       photo.caption || "",
-          siblingPhotos: siblings,
-          source:        "stop",
-          stopName:      stop.name?.split(",")[0] || null,
+          kind:             "photo",
+          id:               `trip-${trip.id}-stop-${stop.id}-photo-${photo.id}`,
+          photoId:          photo.id,
+          caption:          photo.caption || "",
+          siblingPhotos:    siblings,
+          source:           "stop",
+          stopName:         stop.name?.split(",")[0] || null,
+          stopDescription:  stop.description || null, // ← NEW: powers the journal note
           ...baseCtx,
         });
         photoCount++;
@@ -84,9 +84,10 @@ function buildTripItems(trips) {
     // ── Fallback if no photos at all ───────────────────────────
     if (photoCount === 0) {
       items.push({
-        kind:          "trip_fallback",
-        id:            `trip-${trip.id}-fallback`,
-        siblingPhotos: [],
+        kind:             "trip_fallback",
+        id:               `trip-${trip.id}-fallback`,
+        siblingPhotos:    [],
+        stopDescription:  null,
         ...baseCtx,
       });
     }
