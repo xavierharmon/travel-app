@@ -253,4 +253,79 @@
 }
 
 .scrapbookHeader::before { left:  clamp(20px, 4vw, 60px); transform: rotate(-3deg); }
-.scrapbookHeader::after  { right: clamp(20px, 4vw, 60px); transform: rotate(2deg);  }
+.scrapbookHeader::after  { right: clamp(20px, 4vw, 60px); transform: rotate(2deg);  }/* ── ADD TO BOTTOM OF SlideshowItem.module.css ─────────────────── */
+
+/* ── Floating journal note ───────────────────── */
+/* Positioned in the upper area alongside polaroids, off to one side */
+.journalNote {
+  position:    absolute;
+  top:         clamp(16px, 5%, 60px);
+  z-index:     20;
+  width:       clamp(160px, 18vw, 240px);
+  background:  #fdf9ee;
+  padding:     16px 14px 20px;
+  box-shadow:  2px 4px 20px rgba(0,0,0,0.5), 0 0 0 1px rgba(0,0,0,0.08);
+  transform:   rotate(var(--note-tilt, -2deg));
+  animation:   noteSlideIn 0.5s cubic-bezier(0.22, 1, 0.36, 1) 0.4s both;
+
+  /* Lined paper effect */
+  background-image:
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 22px,
+      rgba(150, 180, 220, 0.25) 22px,
+      rgba(150, 180, 220, 0.25) 23px
+    ),
+    linear-gradient(135deg, #fdfbf2 0%, #f8f3e0 100%);
+}
+
+.journalNoteLeft  { left:  clamp(12px, 3vw, 40px); }
+.journalNoteRight { right: clamp(12px, 3vw, 40px); }
+
+@keyframes noteSlideIn {
+  from { opacity: 0; transform: rotate(var(--note-tilt, -2deg)) translateY(20px) scale(0.92); }
+  to   { opacity: 1; transform: rotate(var(--note-tilt, -2deg)) translateY(0)    scale(1);    }
+}
+
+/* Tape strip at top */
+.noteTape {
+  position:      absolute;
+  top:           -10px;
+  left:          50%;
+  transform:     translateX(-50%) rotate(-1deg);
+  width:         48px;
+  height:        18px;
+  background:    rgba(255, 230, 100, 0.6);
+  border:        1px solid rgba(200, 175, 60, 0.3);
+  border-radius: 2px;
+}
+
+/* Location header */
+.noteLocation {
+  font-family:    'Caveat', cursive;
+  font-size:      12px;
+  font-weight:    700;
+  color:          #7a6a52;
+  margin:         0 0 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  border-bottom:  1px solid rgba(180,160,120,0.3);
+  padding-bottom: 6px;
+}
+
+/* Main text */
+.noteText {
+  font-family: 'Caveat', cursive;
+  font-size:   clamp(13px, 1.4vw, 16px);
+  font-weight: 400;
+  color:       #3a2e1e;
+  line-height: 1.55;
+  margin:      0;
+
+  /* Clamp to ~6 lines */
+  display:            -webkit-box;
+  -webkit-line-clamp: 6;
+  -webkit-box-orient: vertical;
+  overflow:           hidden;
+}
