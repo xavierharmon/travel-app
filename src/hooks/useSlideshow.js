@@ -27,6 +27,7 @@ function buildTripItems(trips) {
 
     const baseCtx = {
       tripName: trip.name || "Untitled Trip",
+      tripDescription: (trip.description || "").split('\n')[0],
       date:     trip.date || null,
       mileage,
       route,

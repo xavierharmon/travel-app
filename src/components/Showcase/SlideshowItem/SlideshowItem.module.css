@@ -262,7 +262,7 @@
   top:         clamp(16px, 5%, 60px);
   z-index:     20;
   width:       clamp(160px, 18vw, 240px);
-  background:  #fdf9ee;
+  background:  #af9653;
   padding:     16px 14px 20px;
   box-shadow:  2px 4px 20px rgba(0,0,0,0.5), 0 0 0 1px rgba(0,0,0,0.08);
   transform:   rotate(var(--note-tilt, -2deg));
@@ -325,7 +325,7 @@
 
   /* Clamp to ~6 lines */
   display:            -webkit-box;
-  -webkit-line-clamp: 6;
+  -webkit-line-clamp: 30;
   -webkit-box-orient: vertical;
   overflow:           hidden;
 }

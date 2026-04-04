@@ -62,10 +62,7 @@ function buildSlotPhotos(item) {
 
 // ── Floating journal note ────────────────────────────────────────
 function JournalNote({ item, animationKey }) {
-  const text = item.source === "stop"
-    // For stop photos, look for stop description — passed through pool item
-    ? (item.stopDescription || null)
-    : null; // trip-level photos don't show a note (header covers it)
+  const text    = item.tripDescription; // trip-level photos don't show a note (header covers it)
 
   if (!text) return null;
 
