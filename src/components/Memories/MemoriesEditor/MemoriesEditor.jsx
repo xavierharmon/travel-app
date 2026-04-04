@@ -68,7 +68,7 @@ export default function MemoriesEditor({ form, errors, onChange }) {
             onChange={e => set("memorytag", e.target.value)}
             placeholder="Add a tag (e.g., #vacation, #family)" list="tag-suggestions"/>
             <datalist id="tag-suggestions">
-              {["Core Memory", "Running", "Friends", "Food","Animals","Life","Outdoors","Home"].map(t => <option key={t} value={t} />)}
+              {["Core Memory", "Running", "Friends", "Food","Animals","Life","Outdoors","Home", "Date Night"].map(t => <option key={t} value={t} />)}
             </datalist>
           
         </div>
