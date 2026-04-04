@@ -50,6 +50,30 @@ export default function MemoriesEditor({ form, errors, onChange }) {
         </div>
       </section>
 
+      {/* Location + Tag */}
+      <section className={styles.section}>
+        <div className={styles.field}>
+          <label className={styles.label}>Location</label>
+          <input
+            className={styles.input}
+            value={form.location || ""}
+            onChange={e => set("location", e.target.value)}
+            placeholder="Where did this happen?"
+          />
+        </div>
+        <div className={styles.field}>
+          <label className={styles.label}>Tag</label>
+          <input
+            className={styles.input} value={form.memorytag || ""}
+            onChange={e => set("memorytag", e.target.value)}
+            placeholder="Add a tag (e.g., #vacation, #family)" list="tag-suggestions"/>
+            <datalist id="tag-suggestions">
+              {["Core Memory", "Running", "Friends", "Food","Animals","Life","Outdoors","Home"].map(t => <option key={t} value={t} />)}
+            </datalist>
+          
+        </div>
+      </section>
+
       {/* Photos */}
       <section className={styles.section}>
         <h3 className={styles.sectionTitle}>Memory Photos</h3>

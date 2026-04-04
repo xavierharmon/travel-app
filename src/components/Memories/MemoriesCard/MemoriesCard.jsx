@@ -29,7 +29,9 @@ export default function MemoriesCard({ memory, onEdit, onDelete }) {
 
       {/* Meta */}
       <div className={styles.metaRow}>
-        {memory.date && <span className={styles.date}>{memory.date}</span>}
+        {memory.date && <span className={styles.date}>🗓️{memory.date}</span>}
+        {memory.location && <span className={styles.location}>📍{memory.location}</span>}
+        {memory.memorytag && <span className={styles.tag}>✨{memory.memorytag}</span>}
       </div>
 
       {/* Photo strip */}
