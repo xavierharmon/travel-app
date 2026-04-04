@@ -156,27 +156,9 @@ export default function TripStoryModal({ trip, onClose }) {
           </div>
         )}
 
-        {/* ── Divider ───────────────────────────── */}
-        {(trip.description || heroPhotos.length > 0) && allStops.length > 0 && (
-          <div className={styles.sectionDivider}>
-            <span>The Journey</span>
-          </div>
-        )}
 
-        {/* ── Stop-by-stop narrative ─────────────── */}
-        {allStops.length > 0 && (
-          <div className={styles.stopsSection}>
-            {allStops.map((stop, i) => (
-              <StopEntry
-                key={stop.id || i}
-                stop={stop}
-                index={i}
-                isOrigin={stop._isOrigin}
-                isDest={stop._isDest}
-              />
-            ))}
-          </div>
-        )}
+
+
 
         {/* ── Empty state ────────────────────────── */}
         {!trip.description && heroPhotos.length === 0 && allStops.length === 0 && (

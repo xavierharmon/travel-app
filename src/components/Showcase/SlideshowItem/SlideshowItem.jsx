@@ -39,7 +39,7 @@ function journalSide(id) {
   for (let i = 0; i < id.length; i++) {
     hash = (hash * 31 + id.charCodeAt(i)) & 0xffffffff;
   }
-  return (hash >>> 0) % 2 === 0 ? "left" : "right";
+  return (hash >>> 0) % 2 === 0 ? "right" : "right";
 }
 
 // Slight tilt for the journal note

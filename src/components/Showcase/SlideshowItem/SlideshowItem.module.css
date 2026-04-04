@@ -259,7 +259,7 @@
 /* Positioned in the upper area alongside polaroids, off to one side */
 .journalNote {
   position:    absolute;
-  top:         clamp(16px, 5%, 60px);
+  bottom:         clamp(8px, 5%, 40px);
   z-index:     20;
   width:       clamp(160px, 18vw, 240px);
   background:  #af9653;
@@ -280,8 +280,8 @@
     linear-gradient(135deg, #fdfbf2 0%, #f8f3e0 100%);
 }
 
-.journalNoteLeft  { left:  clamp(12px, 3vw, 40px); }
-.journalNoteRight { right: clamp(12px, 3vw, 40px); }
+/*.journalNoteLeft  { left:  clamp(12px, 3vw, 40px); }*/
+.journalNoteRight { right: clamp(45px, 3vw, 60px); }
 
 @keyframes noteSlideIn {
   from { opacity: 0; transform: rotate(var(--note-tilt, -2deg)) translateY(20px) scale(0.92); }
@@ -294,9 +294,9 @@
   top:           -10px;
   left:          50%;
   transform:     translateX(-50%) rotate(-1deg);
-  width:         48px;
+  width:         98px;
   height:        18px;
-  background:    rgba(255, 230, 100, 0.6);
+  background:    rgba(255, 230, 100, 0.7);
   border:        1px solid rgba(200, 175, 60, 0.3);
   border-radius: 2px;
 }
@@ -317,15 +317,15 @@
 /* Main text */
 .noteText {
   font-family: 'Caveat', cursive;
-  font-size:   clamp(13px, 1.4vw, 16px);
-  font-weight: 400;
+  font-size:   clamp(15px, 1.4vw, 18px);
+  font-weight: 500;
   color:       #3a2e1e;
   line-height: 1.55;
   margin:      0;
 
   /* Clamp to ~6 lines */
   display:            -webkit-box;
-  -webkit-line-clamp: 30;
+  -webkit-line-clamp: 6;
   -webkit-box-orient: vertical;
   overflow:           hidden;
 }

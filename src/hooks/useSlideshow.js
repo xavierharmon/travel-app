@@ -1,7 +1,8 @@
 // src/hooks/useSlideshow.js
 //
-// Updated: stop-level items now carry stopDescription so the
-// SlideshowItem can render the floating journal note.
+// One slide per trip / game / memory — no duplicates.
+// Each slide randomly selects up to 3 photos from ALL photos
+// associated with that entity (trip-level + all stop-level).
 
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { computeTripMileage } from "@/utils/tripMileage";
@@ -16,92 +17,80 @@ function shuffle(arr) {
   return a;
 }
 
-function buildTripItems(trips) {
-  const items = [];
+// Pick up to `max` items randomly from an array
+function pickRandom(arr, max) {
+  return shuffle(arr).slice(0, max);
+}
 
-  for (const trip of trips) {
+function buildTripItems(trips) {
+  return trips.map(trip => {
     const mileage    = computeTripMileage(trip);
     const routeStops = [trip.origin, ...(trip.stops || []), trip.destination]
       .filter(s => s?.name);
     const route      = routeStops.map(s => s.name.split(",")[0]).join(" → ");
 
-    const baseCtx = {
-      tripName: trip.name || "Untitled Trip",
-      tripDescription: (trip.description || "").split('\n')[0],
-      date:     trip.date || null,
+    // Gather ALL photos across trip-level and every stop
+    const allPhotos = [
+      ...(trip.photos || []).filter(p => p?.id).map(p => ({
+        id:              p.id,
+        caption:         p.caption || "",
+        stopName:        null,
+        stopDescription: null,
+      })),
+      ...(trip.stops || []).flatMap(stop =>
+        (stop.photos || []).filter(p => p?.id).map(p => ({
+          id:              p.id,
+          caption:         p.caption || "",
+          stopName:        stop.name?.split(",")[0] || null,
+          stopDescription: stop.description || null,
+        }))
+      ),
+    ];
+
+    // Pick up to 3 at random — hero is index 0
+    const selected = pickRandom(allPhotos, 3);
+    const hero     = selected[0] || null;
+    const siblings = selected.slice(1).map(p => ({ id: p.id, caption: p.caption }));
+
+    const hasFallback = allPhotos.length === 0;
+
+    return {
+      kind:             hasFallback ? "trip_fallback" : "photo",
+      id:               `trip-${trip.id}`,
+      source:           "trip",
+      tripName:         trip.name || "Untitled Trip",
+      tripDescription:  (trip.description || "").split("\n")[0],
+      date:             trip.date || null,
       mileage,
       route,
+
+      // Photo fields (null for fallback)
+      photoId:          hero?.id              || null,
+      caption:          hero?.caption         || "",
+      stopName:         hero?.stopName        || null,
+      stopDescription:  hero?.stopDescription || null,
+      siblingPhotos:    siblings,
     };
-
-    let photoCount = 0;
-
-    // ── Trip-level photos ──────────────────────────────────────
-    const tripPhotos = (trip.photos || []).filter(p => p?.id);
-
-    for (const photo of tripPhotos) {
-      const siblings = tripPhotos
-        .filter(p => p.id !== photo.id)
-        .slice(0, 2)
-        .map(p => ({ id: p.id, caption: p.caption || "" }));
-
-      items.push({
-        kind:             "photo",
-        id:               `trip-${trip.id}-photo-${photo.id}`,
-        photoId:          photo.id,
-        caption:          photo.caption || "",
-        siblingPhotos:    siblings,
-        source:           "trip",
-        stopDescription:  null, // trip-level — no stop note
-        ...baseCtx,
-      });
-      photoCount++;
-    }
-
-    // ── Stop-level photos ──────────────────────────────────────
-    for (const stop of trip.stops || []) {
-      const stopPhotos = (stop.photos || []).filter(p => p?.id);
-
-      for (const photo of stopPhotos) {
-        const siblings = stopPhotos
-          .filter(p => p.id !== photo.id)
-          .slice(0, 2)
-          .map(p => ({ id: p.id, caption: p.caption || "" }));
-
-        items.push({
-          kind:             "photo",
-          id:               `trip-${trip.id}-stop-${stop.id}-photo-${photo.id}`,
-          photoId:          photo.id,
-          caption:          photo.caption || "",
-          siblingPhotos:    siblings,
-          source:           "stop",
-          stopName:         stop.name?.split(",")[0] || null,
-          stopDescription:  stop.description || null, // ← NEW: powers the journal note
-          ...baseCtx,
-        });
-        photoCount++;
-      }
-    }
-
-    // ── Fallback if no photos at all ───────────────────────────
-    if (photoCount === 0) {
-      items.push({
-        kind:             "trip_fallback",
-        id:               `trip-${trip.id}-fallback`,
-        siblingPhotos:    [],
-        stopDescription:  null,
-        ...baseCtx,
-      });
-    }
-  }
-
-  return items;
+  });
 }
 
 function buildGameItems(games) {
-  const items = [];
+  return games.map(game => {
+    const allPhotos = (game.photos || []).filter(p => p?.id).map(p => ({
+      id:      p.id,
+      caption: p.caption || "",
+    }));
 
-  for (const game of games) {
-    const baseCtx = {
+    const selected = pickRandom(allPhotos, 3);
+    const hero     = selected[0] || null;
+    const siblings = selected.slice(1).map(p => ({ id: p.id, caption: p.caption }));
+
+    const hasFallback = allPhotos.length === 0;
+
+    return {
+      kind:             hasFallback ? "game_fallback" : "photo",
+      id:               `game-${game.id}`,
+      source:           "game",
       homeTeam:         game.homeTeam         || "Home",
       visitingTeam:     game.visitingTeam     || "Visitor",
       homeTeamLogo:     game.homeTeamLogo     || null,
@@ -114,38 +103,12 @@ function buildGameItems(games) {
       city:             game.city             || null,
       sport:            game.sport            || null,
       collegeSport:     game.collegeSport     || null,
+
+      photoId:       hero?.id      || null,
+      caption:       hero?.caption || "",
+      siblingPhotos: siblings,
     };
-
-    const gamePhotos = (game.photos || []).filter(p => p?.id);
-
-    for (const photo of gamePhotos) {
-      const siblings = gamePhotos
-        .filter(p => p.id !== photo.id)
-        .slice(0, 2)
-        .map(p => ({ id: p.id, caption: p.caption || "" }));
-
-      items.push({
-        kind:          "photo",
-        id:            `game-${game.id}-photo-${photo.id}`,
-        photoId:       photo.id,
-        caption:       photo.caption || "",
-        siblingPhotos: siblings,
-        source:        "game",
-        ...baseCtx,
-      });
-    }
-
-    if (gamePhotos.length === 0) {
-      items.push({
-        kind:          "game_fallback",
-        id:            `game-${game.id}-fallback`,
-        siblingPhotos: [],
-        ...baseCtx,
-      });
-    }
-  }
-
-  return items;
+  });
 }
 
 export function useSlideshow(trips, games) {
