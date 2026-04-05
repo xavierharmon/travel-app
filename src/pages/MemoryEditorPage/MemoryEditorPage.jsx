@@ -18,6 +18,8 @@ export default function MemoryEditorPage({ memory, onBack }) {
         name:        "",
         description: "",
         photos:      [],
+        memorytag:   "",
+        location:    "",
       };
     }
     return { ...memory };
