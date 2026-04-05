@@ -12,8 +12,21 @@ import AutoSyncProvider from "@/components/AutoSyncProvider";
 import MemoryListPage  from "@/pages/MemoryListPage";
 import MemoriesEditorPage from "@/pages/MemoryEditorPage";
 
+// Add this function above the App component, before the export
+function isTVDevice() {
+  const hasLargeScreen =
+    window.screen.width  >= 1280 &&
+    window.screen.height >= 720;
+
+  const hasNoFinePointer = window.matchMedia(
+    "(pointer: coarse) or (pointer: none)"
+  ).matches;
+
+  return hasLargeScreen && hasNoFinePointer;
+}
+
 export default function App() {
-  const [view,         setView]         = useState(VIEWS.LIST);
+  const [view,         setView]         = useState(isTVDevice() ? VIEWS.SHOWCASE : VIEWS.LIST);
   const [selectedTrip, setSelectedTrip] = useState(null);
   const [selectedGame, setSelectedGame] = useState(null);
   const [selectedMemory, setSelectedMemory] = useState(null);
