@@ -1,5 +1,6 @@
 .page {
-  min-height:     100vh;
+  min-height: 100vh;
+  min-height: 100dvh;
   display:        flex;
   flex-direction: column;
 }
@@ -7,7 +8,7 @@
 /* ── Header ─────────────────────────────────── */
 .header {
   display:         flex;
-  align-items:     center;
+  align-items:     flex-start;
   justify-content: space-between;
   padding:         var(--space-xl);
   gap:             var(--space-md);
@@ -19,8 +20,10 @@
 
 .brand {
   display:     flex;
-  align-items: center;
+  align-items: flex-start;
   gap:         var(--space-md);
+  flex:        1;
+  min-width:   0;
 }
 
 .brandIcon {
@@ -42,6 +45,11 @@
   object-fit: contain;
 }
 
+.brandText {
+  flex: 1;
+  min-width: 0;
+}
+
 .title {
   font-size:               var(--font-size-2xl);
   font-weight:             800;
@@ -54,6 +62,15 @@
 .subtitle {
   font-size: var(--font-size-sm);
   color:     var(--color-text-subtle);
+  margin-bottom: var(--space-sm);
+}
+
+/* ── Action buttons row ─────────────────────── */
+.actionBtns {
+  display:   flex;
+  gap:       var(--space-xs);
+  flex-wrap: wrap;
+  margin-top: var(--space-xs);
 }
 
 /* ── Error banner ────────────────────────────── */
@@ -107,6 +124,7 @@
   transition:    all var(--transition);
   font-family:   var(--font-sans);
   white-space:   nowrap;
+  min-height:    36px;
 }
 
 .sortBtn:hover {
@@ -220,6 +238,97 @@
   text-decoration: underline;
   padding:         0;
   font-family:     var(--font-sans);
+  min-height:      44px; /* touch target */
+  display:         flex;
+  align-items:     center;
 }
 
 .clearCacheBtn:hover { color: var(--color-danger); }
+
+/* ── MOBILE OVERRIDES ───────────────────────── */
+@media (max-width: 600px) {
+  .header {
+    padding:    var(--space-md);
+    gap:        var(--space-sm);
+    flex-direction: column;
+  }
+
+  .brand {
+    align-items: center;
+    width: 100%;
+  }
+
+  .brandIcon {
+    width:  72px;
+    height: 72px;
+    flex-shrink: 0;
+  }
+
+  .title {
+    font-size: var(--font-size-xl);
+  }
+
+  .subtitle {
+    font-size: var(--font-size-xs);
+  }
+
+  .actionBtns {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-xs);
+  }
+
+  /* "New Trip" button spans full width */
+  .actionBtns > :last-child {
+    grid-column: 1 / -1;
+  }
+
+  .sortBar {
+    padding: 0 var(--space-md) var(--space-sm);
+  }
+
+  .main {
+    padding: 0 var(--space-md) var(--space-xl);
+  }
+
+  .footer {
+    padding:        var(--space-md);
+    flex-direction: column;
+    align-items:    flex-start;
+  }
+
+  .footerLeft { min-width: 0; width: 100%; }
+
+  .footerRight {
+    width:          100%;
+    justify-content: space-between;
+  }
+
+  .empty {
+    padding: 48px var(--space-md);
+  }
+
+  .errorBanner {
+    width: calc(100% - var(--space-md) * 2);
+  }
+}
+
+@media (max-width: 380px) {
+  .brandIcon {
+    width:  56px;
+    height: 56px;
+  }
+
+  .title {
+    font-size: var(--font-size-lg);
+  }
+
+  .actionBtns {
+    grid-template-columns: 1fr;
+  }
+
+  .actionBtns > :last-child {
+    grid-column: auto;
+  }
+}

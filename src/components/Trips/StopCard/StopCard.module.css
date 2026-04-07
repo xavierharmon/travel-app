@@ -1,5 +1,34 @@
-/* Add these to the bottom of StopCard.module.css */
+/* StopCard.module.css — full file with mobile support */
 
+/* ── Card wrapper ─────────────────────────────── */
+.card {
+  background:    var(--color-surface);
+  border:        1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  overflow:      hidden;
+}
+
+/* ── Header row ───────────────────────────────── */
+.header {
+  display:     flex;
+  align-items: center;
+  gap:         var(--space-sm);
+  padding:     var(--space-sm) var(--space-md);
+}
+
+.dot {
+  width:         10px;
+  height:        10px;
+  border-radius: 50%;
+  background:    var(--color-primary);
+  flex-shrink:   0;
+}
+
+.inputWrap { flex: 1; min-width: 0; }
+
+.expandBtn { flex-shrink: 0; }
+
+/* ── Travel mode selector ─────────────────────── */
 .travelModeRow {
   display:     flex;
   align-items: center;
@@ -16,8 +45,8 @@
 }
 
 .travelModeBtns {
-  display: flex;
-  gap:     var(--space-xs);
+  display:   flex;
+  gap:       var(--space-xs);
   flex-wrap: wrap;
 }
 
@@ -31,6 +60,7 @@
   border:        1px solid var(--color-border);
   cursor:        pointer;
   transition:    all var(--transition);
+  min-height:    36px;
 }
 
 .travelModeBtn:hover {
@@ -42,4 +72,56 @@
   background:   var(--color-primary) !important;
   border-color: var(--color-primary) !important;
   color:        #fff !important;
+}
+
+/* ── Expanded details ─────────────────────────── */
+.details {
+  padding:        var(--space-md);
+  border-top:     1px solid var(--color-border);
+  display:        flex;
+  flex-direction: column;
+  gap:            var(--space-sm);
+}
+
+.detailLabel {
+  font-size:      var(--font-size-xs);
+  font-weight:    600;
+  color:          var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom:  2px;
+  display:        block;
+}
+
+.textarea {
+  background:    var(--color-surface-2);
+  border:        1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding:       8px 12px;
+  color:         var(--color-text);
+  font-size:     var(--font-size-sm);
+  resize:        vertical;
+  outline:       none;
+  line-height:   1.6;
+  transition:    border-color var(--transition);
+  font-family:   var(--font-sans);
+  width:         100%;
+  box-sizing:    border-box;
+  /* Prevent zoom on iOS */
+  font-size:     16px;
+}
+
+.textarea:focus        { border-color: var(--color-border-focus); }
+.textarea::placeholder { color: var(--color-text-subtle); }
+
+/* ── MOBILE OVERRIDES ───────────────────────── */
+@media (max-width: 600px) {
+  .header {
+    padding: var(--space-xs) var(--space-sm);
+    gap:     var(--space-xs);
+  }
+
+  .travelModeRow {
+    padding: var(--space-xs) var(--space-sm) var(--space-sm);
+  }
 }

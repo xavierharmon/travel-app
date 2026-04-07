@@ -27,6 +27,8 @@
   font-family:   var(--font-sans);
   width:         100%;
   box-sizing:    border-box;
+  /* Prevent iOS zoom on focus */
+  font-size:     clamp(16px, 4vw, 22px);
 }
 
 .nameInput:focus         { border-color: var(--color-border-focus); }
@@ -74,12 +76,13 @@
   background:    var(--color-surface-2);
   border:        1px solid var(--color-border);
   border-radius: var(--radius-md);
-  padding:       8px 12px;
+  padding:       10px 12px;
   color:         var(--color-text);
-  font-size:     var(--font-size-sm);
+  font-size:     16px; /* prevents iOS zoom */
   outline:       none;
   transition:    border-color var(--transition);
   font-family:   var(--font-sans);
+  min-height:    44px;
 }
 
 .input:focus { border-color: var(--color-border-focus); }
@@ -88,9 +91,9 @@
   background:    var(--color-surface-2);
   border:        1px solid var(--color-border);
   border-radius: var(--radius-md);
-  padding:       8px 12px;
+  padding:       10px 12px;
   color:         var(--color-text);
-  font-size:     var(--font-size-sm);
+  font-size:     16px; /* prevents iOS zoom */
   resize:        vertical;
   outline:       none;
   line-height:   1.6;
@@ -119,7 +122,7 @@
 .originDot { background: var(--color-success); }
 .stopDot   { background: var(--color-primary); }
 .destDot   { background: var(--color-danger); }
-.routeField { flex: 1; }
+.routeField { flex: 1; min-width: 0; }
 
 /* Connector lines */
 .connectorGroup {
@@ -137,23 +140,16 @@
   padding:    2px 0;
 }
 
-.stopRow:active {
-  cursor: grabbing;
-}
+.stopRow:active { cursor: grabbing; }
 
-/* Visual feedback when this row is the active drag target */
 .dragOver {
   background:  rgba(99, 102, 241, 0.08);
   box-shadow:  0 0 0 2px var(--color-primary);
   border-radius: var(--radius-md);
 }
 
-/* Ghost: semi-transparent while dragging */
-.dragging {
-  opacity: 0.4;
-}
+.dragging { opacity: 0.4; }
 
-/* Left column: drag handle + connector lines + dot */
 .connectorLeft {
   display:        flex;
   flex-direction: column;
@@ -179,23 +175,26 @@
   user-select: none;
   padding:     2px 0;
   transition:  color var(--transition);
+  /* Bigger touch target */
+  min-height:  32px;
+  display:     flex;
+  align-items: center;
 }
 
-.dragHandle:hover {
-  color: var(--color-primary);
-}
+.dragHandle:hover { color: var(--color-primary); }
 
 .stopCardWrap {
   flex:          1;
+  min-width:     0;
   margin-bottom: var(--space-xs);
 }
 
-/* ── Insert-stop button (between stops) ─────────── */
+/* ── Insert-stop button ─────────────────────── */
 .insertStopRow {
   display:        flex;
   flex-direction: column;
-  align-items:    flex-start;        /* align to left gutter */
-  padding-left:   9px;               /* lines up with the connector */
+  align-items:    flex-start;
+  padding-left:   9px;
   gap:            0;
 }
 
@@ -230,12 +229,9 @@
   transform:    scale(1.15);
 }
 
-.insertStopIcon {
-  line-height: 1;
-  font-weight: 400;
-}
+.insertStopIcon { line-height: 1; font-weight: 400; }
 
-/* ── Add Stop button (appends to end) ──────────── */
+/* ── Add Stop button ────────────────────────── */
 .addStopRow {
   display:        flex;
   flex-direction: column;
@@ -249,7 +245,7 @@
   align-items:     center;
   justify-content: center;
   gap:             var(--space-xs);
-  padding:         8px 20px;
+  padding:         10px 20px;
   background:      var(--color-surface-2);
   border:          1px dashed var(--color-border);
   border-radius:   var(--radius-md);
@@ -260,6 +256,8 @@
                    background var(--transition);
   cursor:          pointer;
   margin:          var(--space-xs) 0;
+  min-height:      44px;
+  width:           100%;
 }
 
 .addStopBtn:hover {
@@ -268,11 +266,7 @@
   background:   rgba(99, 102, 241, 0.05);
 }
 
-.addStopIcon {
-  font-size:   18px;
-  line-height: 1;
-  font-weight: 300;
-}
+.addStopIcon { font-size: 18px; line-height: 1; font-weight: 300; }
 
 /* ── Travel mode selector ─────────────────────── */
 .travelModeRow {
@@ -308,6 +302,7 @@
   color:         var(--color-text-muted);
   background:    var(--color-surface);
   border-color:  var(--color-border);
+  min-height:    36px;
 }
 
 .travelModeBtn:hover {

@@ -11,20 +11,24 @@
   z-index:         1000;
   padding:         var(--space-md);
   backdrop-filter: blur(2px);
+  /* Allow scrolling the modal on small screens */
+  overflow-y:      auto;
 }
 
 /* ── Modal shell ─────────────────────────────── */
 .modal {
-  background:    var(--color-surface);
-  border:        1px solid var(--color-border);
-  border-radius: var(--radius-xl);
-  width:         100%;
-  max-width:     480px;
-  max-height:    90vh;
-  display:       flex;
+  background:     var(--color-surface);
+  border:         1px solid var(--color-border);
+  border-radius:  var(--radius-xl);
+  width:          100%;
+  max-width:      480px;
+  max-height:     90vh;
+  display:        flex;
   flex-direction: column;
-  overflow:      hidden;
-  box-shadow:    var(--shadow-lg);
+  overflow:       hidden;
+  box-shadow:     var(--shadow-lg);
+  /* On mobile, allow the modal to be taller */
+  margin:         auto;
 }
 
 /* ── Header ─────────────────────────────────── */
@@ -68,6 +72,11 @@
   border-radius: var(--radius-sm);
   font-family:   var(--font-sans);
   transition:    color var(--transition), background var(--transition);
+  min-width:     44px;
+  min-height:    44px;
+  display:       flex;
+  align-items:   center;
+  justify-content: center;
 }
 
 .closeBtn:hover { color: var(--color-text); background: var(--color-surface-2); }
@@ -96,6 +105,7 @@
   cursor:          pointer;
   font-family:     var(--font-sans);
   transition:      color var(--transition), border-color var(--transition);
+  min-height:      48px;
 }
 
 .tab:hover { color: var(--color-text); }
@@ -110,6 +120,7 @@
   flex:       1;
   overflow-y: auto;
   padding:    var(--space-lg);
+  -webkit-overflow-scrolling: touch;
 }
 
 /* ── Google Drive panel ─────────────────────── */
@@ -200,6 +211,7 @@
   cursor:          pointer;
   font-family:     var(--font-sans);
   transition:      box-shadow var(--transition), background var(--transition);
+  min-height:      48px;
 }
 
 .googleBtn:hover:not(:disabled) { box-shadow: 0 1px 6px rgba(0,0,0,0.2); }
@@ -245,6 +257,7 @@
   cursor:        pointer;
   font-family:   var(--font-sans);
   transition:    border-color var(--transition), color var(--transition);
+  min-height:    36px;
 }
 
 .disconnectBtn:hover { border-color: var(--color-danger); color: var(--color-danger); }
@@ -289,7 +302,7 @@
 
 .actionBtn {
   width:         100%;
-  padding:       11px var(--space-md);
+  padding:       13px var(--space-md);
   border-radius: var(--radius-md);
   font-size:     var(--font-size-sm);
   font-weight:   600;
@@ -297,6 +310,7 @@
   font-family:   var(--font-sans);
   transition:    all var(--transition);
   text-align:    center;
+  min-height:    48px;
 }
 
 .actionBtn:disabled { opacity: 0.5; cursor: not-allowed; }
@@ -324,13 +338,13 @@
 
 /* ── Confirm box ─────────────────────────────── */
 .confirmBox {
-  background:    rgba(239,68,68,0.08);
-  border:        1px solid var(--color-danger-dark);
-  border-radius: var(--radius-md);
-  padding:       var(--space-md);
-  display:       flex;
+  background:     rgba(239,68,68,0.08);
+  border:         1px solid var(--color-danger-dark);
+  border-radius:  var(--radius-md);
+  padding:        var(--space-md);
+  display:        flex;
   flex-direction: column;
-  gap:           var(--space-sm);
+  gap:            var(--space-sm);
 }
 
 .confirmMsg {
@@ -340,8 +354,9 @@
 }
 
 .confirmBtns {
-  display: flex;
-  gap:     var(--space-sm);
+  display:   flex;
+  gap:       var(--space-sm);
+  flex-wrap: wrap;
 }
 
 /* ── Error message ──────────────────────────── */
@@ -447,7 +462,7 @@
 }
 
 .refreshBtn {
-  padding:       10px 24px;
+  padding:       12px 24px;
   background:    var(--gradient-primary);
   color:         #fff;
   border:        none;
@@ -456,4 +471,28 @@
   font-weight:   600;
   cursor:        pointer;
   font-family:   var(--font-sans);
+  min-height:    48px;
+}
+
+/* ── MOBILE OVERRIDES ───────────────────────── */
+@media (max-width: 600px) {
+  .overlay {
+    padding:     0;
+    align-items: flex-end;
+  }
+
+  .modal {
+    border-radius:    var(--radius-xl) var(--radius-xl) 0 0;
+    max-height:       92vh;
+    max-width:        100%;
+    border-bottom:    none;
+  }
+
+  .body {
+    padding: var(--space-md);
+  }
+
+  .header {
+    padding: var(--space-md);
+  }
 }

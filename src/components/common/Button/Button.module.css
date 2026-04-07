@@ -7,6 +7,8 @@
   font-weight:     600;
   transition:      background var(--transition), opacity var(--transition), transform var(--transition-fast);
   white-space:     nowrap;
+  /* Minimum touch target size for mobile */
+  min-height:      44px;
 }
 
 .btn:disabled { opacity: 0.5; cursor: not-allowed; }
@@ -40,9 +42,14 @@
 .ghost:not(:disabled):hover { color: var(--color-text); }
 
 /* Sizes */
-.sm { font-size: var(--font-size-xs); padding: 6px 10px; }
+.sm { font-size: var(--font-size-xs); padding: 6px 12px; min-height: 36px; }
 .md { font-size: var(--font-size-sm); padding: 9px 16px; }
 .lg { font-size: var(--font-size-md); padding: 13px 22px; }
 
 .fullWidth { width: 100%; }
 .icon { display: flex; align-items: center; }
+
+/* On mobile, sm buttons still get a comfortable touch target height */
+@media (max-width: 600px) {
+  .sm { min-height: 40px; }
+}

@@ -39,6 +39,7 @@
   padding:    var(--space-lg);
   overflow-y: auto;
   flex:       1;
+  -webkit-overflow-scrolling: touch;
 }
 
 .footer {
@@ -47,4 +48,24 @@
   display:      flex;
   gap:          var(--space-sm);
   justify-content: flex-end;
+}
+
+/* ── MOBILE OVERRIDES ───────────────────────── */
+@media (max-width: 600px) {
+  .overlay {
+    padding:     0;
+    align-items: flex-end;
+  }
+
+  .modal {
+    border-radius:  var(--radius-xl) var(--radius-xl) 0 0;
+    max-height:     85vh;
+    max-width:      100%;
+    border-bottom:  none;
+  }
+
+  .footer {
+    /* Give footer buttons more breathing room on mobile */
+    padding: var(--space-md);
+  }
 }

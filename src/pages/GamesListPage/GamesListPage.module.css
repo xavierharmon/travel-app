@@ -2,6 +2,7 @@
 
 .page {
   min-height:     100vh;
+  min-height:     100dvh;
   background:     var(--color-bg);
   display:        flex;
   flex-direction: column;
@@ -65,6 +66,7 @@
 .recordMeta {
   display: flex;
   gap:     var(--space-md);
+  flex-wrap: wrap;
 }
 
 .recordTotal {
@@ -93,18 +95,19 @@
 
 /* ── Filter bar ──────────────────────────────── */
 .filterBar {
-  display:     flex;
-  flex-wrap:   wrap;
-  gap:         var(--space-sm);
-  padding:     var(--space-sm) var(--space-xl);
+  display:       flex;
+  flex-wrap:     wrap;
+  gap:           var(--space-sm);
+  padding:       var(--space-sm) var(--space-xl);
   border-bottom: 1px solid var(--color-border);
-  background:  var(--color-surface);
-  align-items: center;
+  background:    var(--color-surface);
+  align-items:   center;
 }
 
 .filterGroup {
-  display: flex;
-  gap:     4px;
+  display:   flex;
+  gap:       4px;
+  flex-wrap: wrap;
 }
 
 .filterBtn {
@@ -118,6 +121,7 @@
   color:         var(--color-text-muted);
   font-family:   var(--font-sans);
   transition:    all var(--transition);
+  min-height:    36px;
 }
 
 .filterBtn:hover { border-color: var(--color-primary); color: var(--color-text); }
@@ -187,11 +191,11 @@
 
 /* ── Matchup ─────────────────────────────────── */
 .matchup {
-  display:     flex;
-  align-items: center;
-  gap:         var(--space-sm);
-  flex:        1;
-  min-width:   0;
+  display:         flex;
+  align-items:     center;
+  gap:             var(--space-sm);
+  flex:            1;
+  min-width:       0;
   justify-content: center;
 }
 
@@ -202,9 +206,7 @@
   min-width:   0;
 }
 
-.matchupTeamRight {
-  flex-direction: row-reverse;
-}
+.matchupTeamRight { flex-direction: row-reverse; }
 
 .teamLogoSmall {
   width:         32px;
@@ -215,11 +217,11 @@
 }
 
 .teamName {
-  font-size:   var(--font-size-sm);
-  font-weight: 700;
-  color:       var(--color-text);
-  white-space: nowrap;
-  overflow:    hidden;
+  font-size:     var(--font-size-sm);
+  font-weight:   700;
+  color:         var(--color-text);
+  white-space:   nowrap;
+  overflow:      hidden;
   text-overflow: ellipsis;
 }
 
@@ -276,9 +278,11 @@
 
 /* ── Photo strip ─────────────────────────────── */
 .photoStrip {
-  display:    flex;
-  gap:        4px;
-  padding:    0 var(--space-md) var(--space-sm);
+  display:   flex;
+  gap:       4px;
+  padding:   0 var(--space-md) var(--space-sm);
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .photoThumb {
@@ -336,6 +340,60 @@
   color:       var(--color-primary-light);
   font-size:   var(--font-size-xs);
   cursor:      pointer;
-  padding:     4px 0 0;
+  padding:     4px 0;
   font-family: var(--font-sans);
+  min-height:  36px;
+}
+
+/* ── MOBILE OVERRIDES ───────────────────────── */
+@media (max-width: 600px) {
+  .header {
+    padding: var(--space-md);
+  }
+
+  .title {
+    font-size: var(--font-size-lg);
+  }
+
+  .recordBanner {
+    padding: var(--space-md);
+  }
+
+  .recordWins,
+  .recordLosses,
+  .recordTies {
+    font-size: var(--font-size-xl);
+  }
+
+  .filterBar {
+    padding: var(--space-sm) var(--space-md);
+  }
+
+  .main {
+    padding: var(--space-md);
+  }
+
+  /* On small screens hide team name text, show logo only */
+  .teamName {
+    display: none;
+  }
+
+  .cardHeader {
+    padding: var(--space-sm) var(--space-md);
+    gap:     var(--space-xs);
+  }
+
+  .scoreNum {
+    font-size: var(--font-size-lg);
+  }
+
+  .cardMeta {
+    padding: 0 var(--space-sm) var(--space-sm);
+  }
+}
+
+@media (max-width: 400px) {
+  .matchup {
+    gap: var(--space-xs);
+  }
 }

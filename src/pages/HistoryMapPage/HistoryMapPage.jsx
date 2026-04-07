@@ -54,7 +54,6 @@ export default function HistoryMapPage({ onBack }) {
     new Set([TRAVEL_MODES.DRIVE, TRAVEL_MODES.FLIGHT, TRAVEL_MODES.BOAT, TRAVEL_MODES.TRAIN])
   );
 
-  // Compute summary stats and aggregate mileage whenever trips change
   useEffect(() => {
     if (!trips.length) return;
     const totalStops = trips.reduce((sum, t) => {
@@ -72,7 +71,6 @@ export default function HistoryMapPage({ onBack }) {
     setAggregateMileage(computeAggregateMileage(trips));
   }, [trips]);
 
-  // Initialize map when Google Maps is ready
   useEffect(() => {
     if (!isReady || !mapRef.current) return;
     if (!gmapRef.current) {
@@ -88,7 +86,6 @@ export default function HistoryMapPage({ onBack }) {
     }
   }, [isReady]);
 
-  // Redraw whenever trips, filter, or mode changes
   useEffect(() => {
     if (!isReady || !gmapRef.current || !trips.length) return;
     drawAllTrips(activeTripId);
@@ -130,8 +127,6 @@ export default function HistoryMapPage({ onBack }) {
     let   hasPoints  = false;
 
     for (const [tripIndex, trip] of tripsToShow.entries()) {
-
-      // Build full stops array with destinationTravelMode attached
       const rawStops = [
         trip.origin,
         ...(trip.stops || []),
@@ -147,21 +142,14 @@ export default function HistoryMapPage({ onBack }) {
 
       const color = TRIP_COLORS[tripIndex % TRIP_COLORS.length];
 
-      // ── Place markers ──────────────────────────────────────────────
-      // Each stop is only shown if the leg arriving at it (or departing
-      // from it for the origin) has a mode that is currently active.
       rawStops.forEach((stop, stopIndex) => {
         const isOrigin = stopIndex === 0;
         const isDest   = stopIndex === rawStops.length - 1;
 
-        // Determine whether this stop should be visible:
-        // Origin  → visible if the mode of the FIRST outbound leg is active
-        // All others → visible if the mode of the INCOMING leg is active
         const relevantMode = isOrigin
           ? (rawStops[1]?.travelMode || TRAVEL_MODES.DRIVE)
           : (stop.travelMode         || TRAVEL_MODES.DRIVE);
 
-        // Skip this marker entirely if its mode is filtered out
         if (!activeModes.has(relevantMode)) return;
 
         if (mapMode === "heatmap") {
@@ -176,7 +164,6 @@ export default function HistoryMapPage({ onBack }) {
             map:           gmapRef.current,
           });
           overlaysRef.current.push(circle);
-
         } else {
           const pinColor = isOrigin
             ? STOP_COLORS.ORIGIN
@@ -234,7 +221,7 @@ export default function HistoryMapPage({ onBack }) {
                     ${tripMileage.drive  > 0 ? `🚗 ${formatMiles(tripMileage.drive)}<br>` : ""}
                     ${tripMileage.flight > 0 ? `✈️ ${formatMiles(tripMileage.flight)}<br>` : ""}
                     ${tripMileage.boat   > 0 ? `⛵ ${formatMiles(tripMileage.boat)}<br>` : ""}
-                    ${tripMileage.train  > 0 ? `🚞 ${formatMiles(tripMileage.train)}<br>`: ""} 
+                    ${tripMileage.train  > 0 ? `🚞 ${formatMiles(tripMileage.train)}<br>`: ""}
                     <strong>📏 ${formatMiles(tripMileage.total)} total</strong>
                   </div>` : ""}
               </div>`,
@@ -246,19 +233,16 @@ export default function HistoryMapPage({ onBack }) {
           overlaysRef.current.push(marker);
         }
 
-        // Only extend bounds for visible points
         allBounds.extend({ lat: stop.lat, lng: stop.lng });
         hasPoints = true;
       });
 
-      // ── Draw route segments ────────────────────────────────────────
       if (rawStops.length >= 2) {
         for (let i = 1; i < rawStops.length; i++) {
           const from = rawStops[i - 1];
           const to   = rawStops[i];
           const mode = to.travelMode || TRAVEL_MODES.DRIVE;
 
-          // Skip segment if mode is filtered out
           if (!activeModes.has(mode)) continue;
 
           if (mode === TRAVEL_MODES.FLIGHT) {
@@ -273,7 +257,6 @@ export default function HistoryMapPage({ onBack }) {
                 overlaysRef.current.push(l);
               });
             }
-
           } else if (mode === TRAVEL_MODES.BOAT) {
             const lines = drawBoatRoute(
               gmapRef.current, from, to, TRAVEL_MODE_COLORS.BOAT
@@ -286,7 +269,6 @@ export default function HistoryMapPage({ onBack }) {
                 overlaysRef.current.push(l);
               });
             }
-
           } else if (mode === TRAVEL_MODES.TRAIN) {
             const lines = drawTrainRoute(
               gmapRef.current, from, to, TRAVEL_MODE_COLORS.TRAIN
@@ -299,7 +281,6 @@ export default function HistoryMapPage({ onBack }) {
                 overlaysRef.current.push(l);
               });
             }
-
           } else {
             try {
               const result = await fetchAndDrawRoute(
@@ -346,8 +327,6 @@ export default function HistoryMapPage({ onBack }) {
       }
     }
 
-    // Fit bounds to only the visible points — if nothing is visible
-    // after filtering, fall back to the default US center view
     if (hasPoints) {
       gmapRef.current.fitBounds(allBounds, 60);
     } else {
@@ -385,10 +364,7 @@ export default function HistoryMapPage({ onBack }) {
                   <span className={styles.stat}>
                     📏 {formatMiles(aggregateMileage.total)} total
                     {aggregateMileage.hasUncachedDrive && (
-                      <span
-                        title="Some drive distances are estimated until routes are viewed"
-                        style={{ opacity: 0.6, marginLeft: 2 }}
-                      >~</span>
+                      <span title="Some drive distances are estimated" style={{ opacity: 0.6, marginLeft: 2 }}>~</span>
                     )}
                   </span>
                 </>
@@ -441,7 +417,7 @@ export default function HistoryMapPage({ onBack }) {
       {/* ── Body ─────────────────────────────────── */}
       <div className={styles.body}>
 
-        {/* Sidebar */}
+        {/* Sidebar — horizontal scroll strip on mobile */}
         <aside className={styles.sidebar}>
           <p className={styles.sidebarLabel}>Filter by trip</p>
 
@@ -499,8 +475,7 @@ export default function HistoryMapPage({ onBack }) {
 
           {tripsWithCoords.length === 0 && (
             <p className={styles.emptyState}>
-              No trips with locations yet. Add an origin and destination
-              to a trip to see it here.
+              No trips with locations yet.
             </p>
           )}
 

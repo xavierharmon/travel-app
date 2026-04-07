@@ -102,84 +102,50 @@
   display:     flex;
   gap:         var(--space-xs);
   flex-shrink: 0;
+  flex-wrap:   wrap;
 }
-
-/* ── Route ───────────────────────────────────── */
-.route {
-  display:   flex;
-  flex-wrap: wrap;
-  gap:       4px;
-  font-size: var(--font-size-sm);
-  color:     var(--color-text-muted);
-}
-
-.routeStop  { white-space: nowrap; }
-.routeArrow { color: var(--color-border); margin: 0 4px; }
 
 /* ── Photo strip ─────────────────────────────── */
-/*
-  Horizontal scrolling row of thumbnails.
-  Each thumbnail is a fixed width box that lets the image
-  determine its own display height via auto — no clipping.
-*/
 .photoStrip {
   display:        flex;
   flex-direction: row;
-  align-items:    flex-start;   /* align to top so varying heights don't stretch */
+  align-items:    flex-start;
   gap:            6px;
   flex-wrap:      nowrap;
   overflow-x:     auto;
-  overflow-y:     visible;      /* never clip vertically */
+  overflow-y:     visible;
   padding-bottom: 4px;
+  /* Smooth momentum scrolling on iOS */
+  -webkit-overflow-scrolling: touch;
 }
 
-/* Hide scrollbar visually but keep it functional */
-.photoStrip::-webkit-scrollbar {
-  height: 3px;
-}
-
+.photoStrip::-webkit-scrollbar { height: 3px; }
 .photoStrip::-webkit-scrollbar-thumb {
   background:    var(--color-border);
   border-radius: 2px;
 }
 
-/*
-  Each thumbnail:
-  - fixed width so strip stays compact
-  - NO fixed height — height is determined by the image
-  - NO overflow hidden — nothing gets clipped
-  - background fills any gap around the image
-*/
 .photoThumb {
-  position:         relative;
-  flex-shrink:      0;
-  width:            80px;            /* thumbnail width — change here to resize */
-  border-radius:    var(--radius-sm);
-  background:       var(--color-surface-2);
-  border:           1px solid var(--color-border);
-  display:          flex;
-  align-items:      center;
-  justify-content:  center;
-  overflow:         visible;         /* critical — do not clip the image */
+  position:        relative;
+  flex-shrink:     0;
+  width:           80px;
+  border-radius:   var(--radius-sm);
+  background:      var(--color-surface-2);
+  border:          1px solid var(--color-border);
+  display:         flex;
+  align-items:     center;
+  justify-content: center;
+  overflow:        visible;
 }
 
-/*
-  The image:
-  - width 100% fills the thumb width
-  - height auto preserves the original aspect ratio
-  - max-height caps very tall images so they stay thumbnail-sized
-  - object-fit unset so the browser uses natural sizing
-  - display block removes inline baseline gap
-*/
 .photoImg {
-  display:    block;
-  width:      100%;
-  height:     auto;
-  max-height: 80px;                  /* caps tall images — change here to resize */
+  display:       block;
+  width:         100%;
+  height:        auto;
+  max-height:    80px;
   border-radius: var(--radius-sm);
 }
 
-/* +N more overlay — positioned relative to the thumb */
 .photoOverlay {
   position:        absolute;
   inset:           0;
@@ -226,12 +192,50 @@
   background:      none;
   border:          none;
   cursor:          pointer;
-  padding:         0;
+  padding:         4px 0;
   font-family:     var(--font-sans);
   margin-left:     auto;
   transition:      color var(--transition);
   text-decoration: underline;
   text-underline-offset: 2px;
+  min-height:      44px;
+  display:         flex;
+  align-items:     center;
 }
- 
+
 .storyLink:hover { color: var(--color-text); }
+
+/* ── MOBILE OVERRIDES ───────────────────────── */
+@media (max-width: 600px) {
+  .card {
+    padding:       var(--space-md);
+    border-radius: var(--radius-lg);
+  }
+
+  .name {
+    font-size: var(--font-size-md);
+  }
+
+  /* Stack title and actions vertically on small screens */
+  .header {
+    gap: var(--space-sm);
+  }
+
+  .actions {
+    width:          100%;
+    justify-content: flex-end;
+  }
+
+  /* Inline mileage wraps cleanly on mobile */
+  .inlineMileage {
+    gap: 4px;
+  }
+
+  .mileagePill {
+    font-size: 10px;
+  }
+
+  .mileageTotal {
+    font-size: 10px;
+  }
+}

@@ -1,6 +1,6 @@
 /* src/pages/GameEditorPage/GameEditorPage.module.css */
 
-.page { min-height: 100vh; background: var(--color-bg); }
+.page { min-height: 100vh; min-height: 100dvh; background: var(--color-bg); }
 
 .inner {
   max-width:  680px;
@@ -87,25 +87,17 @@
   padding:       0;
 }
 
-.logoBtn:hover {
-  border-color: var(--color-primary);
-}
-
-.logoBtn:hover .logoCameraIcon {
-  opacity: 1;
-}
+.logoBtn:hover { border-color: var(--color-primary); }
+.logoBtn:hover .logoCameraIcon { opacity: 1; }
 
 .logoImg {
-  width:      100%;
-  height:     100%;
-  object-fit: contain;
+  width:         100%;
+  height:        100%;
+  object-fit:    contain;
   border-radius: 50%;
 }
 
-.logoPlaceholder {
-  font-size: 28px;
-  line-height: 1;
-}
+.logoPlaceholder { font-size: 28px; line-height: 1; }
 
 .logoCameraIcon {
   position:   absolute;
@@ -180,6 +172,8 @@
   font-family:   var(--font-sans);
   transition:    border-color var(--transition);
   -moz-appearance: textfield;
+  /* Larger touch target on mobile */
+  min-height:    48px;
 }
 
 .scoreInput::-webkit-outer-spin-button,
@@ -222,6 +216,7 @@
   font-family:   var(--font-sans);
   transition:    all var(--transition);
   letter-spacing: 0.05em;
+  min-height:    36px;
 }
 
 .outcomeBtn:hover { border-color: var(--color-primary); color: var(--color-text); }
@@ -235,12 +230,6 @@
   display:               grid;
   grid-template-columns: 1fr 1fr;
   gap:                   var(--space-md);
-}
-
-@media (max-width: 480px) {
-  .fieldsGrid { grid-template-columns: 1fr; }
-  .scoreboardCard { grid-template-columns: 1fr; }
-  .vsDivider { flex-direction: row; }
 }
 
 /* ── Generic field ───────────────────────────── */
@@ -262,12 +251,13 @@
   background:    var(--color-surface-2);
   border:        1px solid var(--color-border);
   border-radius: var(--radius-md);
-  padding:       8px 12px;
+  padding:       10px 12px;
   color:         var(--color-text);
   font-size:     var(--font-size-sm);
   outline:       none;
   font-family:   var(--font-sans);
   transition:    border-color var(--transition);
+  min-height:    44px;
 }
 
 .input:focus { border-color: var(--color-border-focus); }
@@ -276,7 +266,7 @@
   background:    var(--color-surface-2);
   border:        1px solid var(--color-border);
   border-radius: var(--radius-md);
-  padding:       8px 12px;
+  padding:       10px 12px;
   color:         var(--color-text);
   font-size:     var(--font-size-sm);
   resize:        vertical;
@@ -299,3 +289,37 @@
 
 /* ── Bottom actions ──────────────────────────── */
 .bottomActions { margin-top: var(--space-lg); }
+
+/* ── MOBILE OVERRIDES ───────────────────────── */
+@media (max-width: 600px) {
+  .inner {
+    padding: var(--space-md) var(--space-md) 100px;
+  }
+
+  .pageTitle {
+    font-size:   var(--font-size-xl);
+    margin-bottom: var(--space-md);
+  }
+
+  /* Stack scoreboard vertically on mobile */
+  .scoreboardCard {
+    grid-template-columns: 1fr;
+    gap:                   var(--space-md);
+    padding:               var(--space-md);
+  }
+
+  .vsDivider {
+    flex-direction: row;
+    padding-top:    0;
+    justify-content: center;
+    gap:            var(--space-lg);
+  }
+
+  .outcomePicker {
+    flex-direction: row;
+  }
+
+  .fieldsGrid {
+    grid-template-columns: 1fr;
+  }
+}

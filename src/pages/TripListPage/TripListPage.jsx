@@ -22,7 +22,7 @@ const KEY_LABELS = {
   "sports_games_v1":       "Games",
   "road_trip_routes_v1":   "Routes",
   "road_trip_mileage_v1":  "Mileage",
-  "favorite_memories_v1":    "Memories",
+  "favorite_memories_v1":  "Memories",
 };
 
 function sortTrips(trips, sortBy) {
@@ -104,7 +104,6 @@ export default function TripListPage({
     }
   }
 
-  // Bar color based on percentage
   function barColor(pct) {
     if (pct > 70) return "var(--color-danger)";
     if (pct > 40) return "var(--color-warning)";
@@ -124,38 +123,35 @@ export default function TripListPage({
               className={styles.brandLogo}
             />
           </div>
-          <div>
+          <div className={styles.brandText}>
             <h1 className={styles.title}>Xavier & Kylie's Adventures</h1>
             <p className={styles.subtitle}>
               {loading
                 ? "Loading…"
                 : `${trips.length} trip${trips.length !== 1 ? "s" : ""} saved`}
             </p>
-            <div style={{ display: "flex", gap: "var(--space-sm)", flexWrap: "wrap" }}>
-            <Button variant="secondary" onClick={() => setShowBackup(true)} size="md">
-              🗄️ Backup
-            </Button>
-            <Button variant="secondary" onClick={onViewShowcase} size="md">
-              ✨ Showcase
-            </Button>
-            <Button variant="secondary" onClick={onViewGames} size="md">
-              🏆 Sports Tracker
-            </Button>
-            <Button variant="secondary" onClick={onViewHistory} size="md">
-              🗺️ Trip History
-            </Button>
-            <Button variant="secondary" onClick={onViewMemories} size="md">
-              📸 Memories
-            </Button>
-            <Button onClick={onNewTrip} size="md">
-              + New Trip
-            </Button>
-          </div>
-
+            <div className={styles.actionBtns}>
+              <Button variant="secondary" onClick={() => setShowBackup(true)} size="sm">
+                🗄️ Backup
+              </Button>
+              <Button variant="secondary" onClick={onViewShowcase} size="sm">
+                ✨ Showcase
+              </Button>
+              <Button variant="secondary" onClick={onViewGames} size="sm">
+                🏆 Sports
+              </Button>
+              <Button variant="secondary" onClick={onViewHistory} size="sm">
+                🗺️ History
+              </Button>
+              <Button variant="secondary" onClick={onViewMemories} size="sm">
+                📸 Memories
+              </Button>
+              <Button onClick={onNewTrip} size="sm">
+                + New Trip
+              </Button>
+            </div>
           </div>
         </div>
-
-        
       </header>
 
       {/* ── Error banner ─────────────────────────── */}
@@ -215,8 +211,6 @@ export default function TripListPage({
         <div className={styles.footerLeft}>
           {storageUsage && (
             <div className={styles.storageInfo}>
-
-              {/* ── localStorage bar ────────────────── */}
               <div className={styles.storageRow}>
                 <span className={styles.storageLabel}>
                   Metadata · {storageUsage.mb}MB / 5MB
@@ -246,24 +240,23 @@ export default function TripListPage({
                 />
               </div>
 
-              {/* ── Per-key breakdown ───────────────── */}
               {showBreakdown && storageUsage.breakdown && (
                 <div style={{
-                  display:       "flex",
-                  flexWrap:      "wrap",
-                  gap:           "var(--space-sm)",
-                  marginTop:     4,
+                  display:   "flex",
+                  flexWrap:  "wrap",
+                  gap:       "var(--space-sm)",
+                  marginTop: 4,
                 }}>
                   {Object.entries(storageUsage.breakdown).map(([key, val]) => (
                     <span
                       key={key}
                       style={{
-                        fontSize:      11,
-                        color:         "var(--color-text-subtle)",
-                        background:    "var(--color-surface-2)",
-                        border:        "1px solid var(--color-border)",
-                        borderRadius:  "var(--radius-sm)",
-                        padding:       "2px 8px",
+                        fontSize:     11,
+                        color:        "var(--color-text-subtle)",
+                        background:   "var(--color-surface-2)",
+                        border:       "1px solid var(--color-border)",
+                        borderRadius: "var(--radius-sm)",
+                        padding:      "2px 8px",
                       }}
                     >
                       {KEY_LABELS[key] || key}: {val.kb}KB
@@ -272,11 +265,10 @@ export default function TripListPage({
                 </div>
               )}
 
-              {/* ── IndexedDB photo storage ──────────── */}
               {photoStats && (
                 <div className={styles.storageRow} style={{ marginTop: 6 }}>
                   <span className={styles.storageLabel}>
-                    📷 Photos (IndexedDB) · {photoStats.count} photo{photoStats.count !== 1 ? "s" : ""} · {photoStats.estimatedMb}MB
+                    📷 Photos · {photoStats.count} photo{photoStats.count !== 1 ? "s" : ""} · {photoStats.estimatedMb}MB
                   </span>
                 </div>
               )}
@@ -290,7 +282,6 @@ export default function TripListPage({
           )}
         </div>
 
-        {/* ── Route cache + clear ──────────────────── */}
         {cacheStats && (
           <div className={styles.footerRight}>
             <span className={styles.cacheLabel}>

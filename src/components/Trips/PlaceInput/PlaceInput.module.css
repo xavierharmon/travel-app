@@ -13,11 +13,14 @@
   background:    var(--color-surface-2);
   border:        1px solid var(--color-border);
   border-radius: var(--radius-md);
-  padding:       8px 12px;
+  padding:       10px 12px;
   color:         var(--color-text);
-  font-size:     var(--font-size-sm);
+  /* 16px prevents iOS Safari from zooming on focus */
+  font-size:     16px;
   outline:       none;
   transition:    border-color var(--transition);
+  min-height:    44px;
+  box-sizing:    border-box;
 }
 
 .input:focus { border-color: var(--color-border-focus); }
