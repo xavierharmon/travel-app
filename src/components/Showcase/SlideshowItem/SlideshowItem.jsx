@@ -1,8 +1,4 @@
 // src/components/Showcase/SlideshowItem/SlideshowItem.jsx
-//
-// Updated: adds a floating journal note card (off to the side)
-// showing the stop/trip description when one exists.
-// The polaroid pile and scrapbook header are unchanged.
 
 import { useEffect, useState } from "react";
 import styles from "./SlideshowItem.module.css";
@@ -12,13 +8,19 @@ import { getPhotos } from "@/utils/photoStorage";
 import { formatMiles } from "@/utils/haversine";
 
 // ── Scatter layout helpers ───────────────────────────────────────
+// Offsets are expressed as fractions of viewport width so they
+// never blow past the screen on narrow devices.
 
 function getSlotTransform(slotIndex, totalCount, tiltDeg) {
+  const vw = window.innerWidth;
+
+  // Horizontal offsets as a fraction of vw; kept well inside screen bounds
   const offsets = {
-    1: [{ x: 0,    y: 0   }],
-    2: [{ x: -220, y: -15 }, { x: 220,  y: 15  }],
-    3: [{ x: -375, y: 10  }, { x: 0,    y: -25 }, { x: 375, y: 12 }],
+    1: [{ x: 0,           y: 0    }],
+    2: [{ x: -0.18 * vw,  y: -15  }, { x:  0.18 * vw,  y:  15  }],
+    3: [{ x: -0.30 * vw,  y:  10  }, { x:  0,           y: -25  }, { x: 0.30 * vw, y: 12 }],
   };
+
   const pos = (offsets[totalCount] || offsets[1])[slotIndex] || { x: 0, y: 0 };
   return `translate(${pos.x}px, ${pos.y}px) rotate(${tiltDeg}deg)`;
 }
@@ -33,16 +35,6 @@ function seedTilt(id, index) {
   return ((norm * 14) - 7).toFixed(2);
 }
 
-// Deterministic side (left or right) based on item id
-function journalSide(id) {
-  let hash = 0;
-  for (let i = 0; i < id.length; i++) {
-    hash = (hash * 31 + id.charCodeAt(i)) & 0xffffffff;
-  }
-  return (hash >>> 0) % 2 === 0 ? "right" : "right";
-}
-
-// Slight tilt for the journal note
 function journalTilt(id) {
   let hash = 0;
   const str = `${id}-journal`;
@@ -50,7 +42,7 @@ function journalTilt(id) {
     hash = (hash * 31 + str.charCodeAt(i)) & 0xffffffff;
   }
   const norm = ((hash >>> 0) % 1000) / 1000;
-  return ((norm * 6) - 3).toFixed(2); // -3deg to +3deg
+  return ((norm * 6) - 3).toFixed(2);
 }
 
 // ── Build ordered photo list for a slide ────────────────────────
@@ -62,28 +54,21 @@ function buildSlotPhotos(item) {
 
 // ── Floating journal note ────────────────────────────────────────
 function JournalNote({ item, animationKey }) {
-  const text    = item.tripDescription; // trip-level photos don't show a note (header covers it)
-
+  const text = item.tripDescription;
   if (!text) return null;
 
-  const side = journalSide(item.id);
   const tilt = journalTilt(item.id);
 
   return (
     <div
       key={`note-${animationKey}`}
-      className={`${styles.journalNote} ${side === "left" ? styles.journalNoteLeft : styles.journalNoteRight}`}
+      className={`${styles.journalNote} ${styles.journalNoteRight}`}
       style={{ "--note-tilt": `${tilt}deg` }}
     >
-      {/* Tape strip decoration */}
       <div className={styles.noteTape} />
-
-      {/* Stop name as note header */}
       {item.stopName && (
         <p className={styles.noteLocation}>📍 {item.stopName}</p>
       )}
-
-      {/* The story text */}
       <p className={styles.noteText}>{text}</p>
     </div>
   );
@@ -202,7 +187,6 @@ function PolaroidPile({ item, slotPhotos, dataUrls, animationKey, header }) {
     <div className={styles.polaroidScene}>
       {header}
 
-      {/* Floating journal note for stops with descriptions */}
       {item.source !== "game" && (
         <JournalNote item={item} animationKey={animationKey} />
       )}
@@ -222,8 +206,6 @@ function PolaroidPile({ item, slotPhotos, dataUrls, animationKey, header }) {
               }}
             >
               <img src={url} alt={altText} className={styles.polaroidImg} />
-
-              {/* Each polaroid shows its own photo's caption */}
               <div className={styles.polaroidCaption}>
                 {photo.caption || ""}
               </div>

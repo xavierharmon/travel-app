@@ -18,13 +18,12 @@
 }
 
 /* ── Polaroid stage (upper area) ─────────────── */
-/* Polaroids float in the top 65% of the screen  */
 .polaroidStage {
   position: absolute;
   top:      0;
   left:     0;
   right:    0;
-  bottom:   25%;           /* leave room for scrapbook header */
+  bottom:   28%;           /* leave room for scrapbook header */
   display:  flex;
   align-items:     center;
   justify-content: center;
@@ -37,7 +36,8 @@
   padding:          14px 14px 40px;
   border-radius:    2px;
   box-shadow:       0 8px 32px rgba(0,0,0,0.8), 0 2px 8px rgba(0,0,0,0.5);
-  width:            clamp(160px, 30vw, 420px);
+  /* Desktop: up to 3 side-by-side */
+  width:            clamp(140px, 26vw, 380px);
   transform-origin: center center;
   will-change:      transform, opacity;
 }
@@ -68,12 +68,12 @@
   background:   #ccc;
 }
 
-/* ── Polaroid caption (photo caption only, no stats) ── */
+/* ── Polaroid caption ────────────────────────── */
 .polaroidCaption {
   padding-top:   12px;
   min-height:    28px;
   font-family:   'Caveat', cursive;
-  font-size:     clamp(15px, 1.6vw,25px);
+  font-size:     clamp(13px, 1.6vw, 25px);
   font-weight:   700;
   color:         #555;
   text-align:    center;
@@ -86,18 +86,15 @@
 }
 
 /* ── Scrapbook header panel ──────────────────── */
-/* Sits in the bottom 40% of the screen           */
-/* Torn paper top edge via clip-path              */
 .scrapbookHeader {
   position:   absolute;
   bottom:     0;
   left:       0;
   right:      0;
-  height:     25%;
+  height:     28%;
   background: #f5f0e8;
   font-family: 'Caveat', cursive;
 
-  /* Torn paper edge — irregular zigzag at the top */
   clip-path: polygon(
     0% 18%,
     2% 8%,
@@ -162,24 +159,25 @@
   to   { transform: translateY(0);    opacity: 1; }
 }
 
-/* ── Header inner content (pushed below the torn edge) ── */
+/* ── Header inner content ────────────────────── */
 .scrapbookInner {
   position:       absolute;
   bottom:         0;
   left:           0;
   right:          0;
-  top:            18%;       /* below the highest point of the torn edge */
-  padding:        12px clamp(24px, 5vw, 80px) 20px;
+  top:            20%;
+  padding:        10px clamp(16px, 4vw, 80px) 16px;
   display:        flex;
   flex-direction: column;
   justify-content: center;
-  gap:            8px;
+  gap:            6px;
+  overflow:       hidden;
 }
 
 /* ── Title line ──────────────────────────────── */
 .scrapbookTitle {
   font-family:   'Caveat', cursive;
-  font-size:     clamp(22px, 4vw, 48px);
+  font-size:     clamp(18px, 4vw, 48px);
   font-weight:   700;
   color:         #1a1a1a;
   margin:        0;
@@ -189,86 +187,85 @@
   text-overflow: ellipsis;
 }
 
-/* ── Subtitle (trip name when showing a stop) ── */
+/* ── Subtitle ─────────────────────────────────── */
 .scrapbookSubtitle {
   font-family: 'Caveat', cursive;
-  font-size:   clamp(14px, 2vw, 24px);
+  font-size:   clamp(12px, 2vw, 24px);
   font-weight: 400;
   color:       #555;
   margin:      0;
   line-height: 1.2;
+  white-space: nowrap;
+  overflow:    hidden;
+  text-overflow: ellipsis;
 }
 
 /* ── Stats row ───────────────────────────────── */
 .scrapbookStats {
   display:     flex;
   align-items: center;
-  gap:         clamp(8px, 1.5vw, 20px);
+  gap:         clamp(6px, 1.5vw, 20px);
   flex-wrap:   wrap;
-  margin-top:  4px;
+  margin-top:  2px;
+  overflow:    hidden;
 }
 
 .statItem {
   font-family: 'Caveat', cursive;
-  font-size:   clamp(13px, 1.8vw, 22px);
+  font-size:   clamp(12px, 1.8vw, 22px);
   font-weight: 600;
   color:       #333;
   display:     flex;
   align-items: center;
-  gap:         5px;
+  gap:         4px;
   white-space: nowrap;
 }
 
-/* Divider dot between stats */
 .statItem + .statItem::before {
   content:      "·";
   color:        #aaa;
-  margin-right: 5px;
+  margin-right: 4px;
   font-weight:  400;
 }
 
-/* ── Outcome badge (games) ────────────────────── */
+/* ── Outcome badge ───────────────────────────── */
 .outcomeBadge {
   font-family:   'Caveat', cursive;
-  font-size:     clamp(13px, 1.8vw, 22px);
+  font-size:     clamp(12px, 1.8vw, 22px);
   font-weight:   700;
-  padding:       3px 14px;
+  padding:       2px 12px;
   border-radius: 3px;
   letter-spacing: 0.05em;
+  flex-shrink:   0;
 }
 
-/* ── Tape decoration (top corners of header) ─── */
-/* Pure CSS tape strips — purely decorative       */
+/* ── Tape decoration ─────────────────────────── */
 .scrapbookHeader::before,
 .scrapbookHeader::after {
   content:          "";
   position:         absolute;
-  top:              12%;
-  width:            clamp(40px, 5vw, 70px);
-  height:           clamp(14px, 2vw, 22px);
+  top:              14%;
+  width:            clamp(32px, 4vw, 70px);
+  height:           clamp(12px, 1.8vw, 22px);
   background:       rgba(255, 230, 120, 0.55);
   border:           1px solid rgba(200, 170, 60, 0.3);
   border-radius:    2px;
-  transform:        rotate(-2deg);
 }
 
-.scrapbookHeader::before { left:  clamp(20px, 4vw, 60px); transform: rotate(-3deg); }
-.scrapbookHeader::after  { right: clamp(20px, 4vw, 60px); transform: rotate(2deg);  }/* ── ADD TO BOTTOM OF SlideshowItem.module.css ─────────────────── */
+.scrapbookHeader::before { left:  clamp(12px, 3vw, 60px); transform: rotate(-3deg); }
+.scrapbookHeader::after  { right: clamp(12px, 3vw, 60px); transform: rotate(2deg);  }
 
 /* ── Floating journal note ───────────────────── */
-/* Positioned in the upper area alongside polaroids, off to one side */
 .journalNote {
   position:    absolute;
-  bottom:         clamp(8px, 5%, 40px);
+  bottom:      clamp(8px, 5%, 40px);
   z-index:     20;
-  width:       clamp(160px, 18vw, 240px);
-  background:  #af9653;
-  padding:     16px 14px 20px;
+  width:       clamp(120px, 15vw, 240px);
+  padding:     14px 12px 18px;
   box-shadow:  2px 4px 20px rgba(0,0,0,0.5), 0 0 0 1px rgba(0,0,0,0.08);
   transform:   rotate(var(--note-tilt, -2deg));
   animation:   noteSlideIn 0.5s cubic-bezier(0.22, 1, 0.36, 1) 0.4s both;
 
-  /* Lined paper effect */
   background-image:
     repeating-linear-gradient(
       0deg,
@@ -280,52 +277,118 @@
     linear-gradient(135deg, #fdfbf2 0%, #f8f3e0 100%);
 }
 
-/*.journalNoteLeft  { left:  clamp(12px, 3vw, 40px); }*/
-.journalNoteRight { right: clamp(45px, 3vw, 60px); }
+.journalNoteRight { right: clamp(12px, 2vw, 60px); }
 
 @keyframes noteSlideIn {
   from { opacity: 0; transform: rotate(var(--note-tilt, -2deg)) translateY(20px) scale(0.92); }
   to   { opacity: 1; transform: rotate(var(--note-tilt, -2deg)) translateY(0)    scale(1);    }
 }
 
-/* Tape strip at top */
 .noteTape {
   position:      absolute;
   top:           -10px;
   left:          50%;
   transform:     translateX(-50%) rotate(-1deg);
-  width:         98px;
-  height:        18px;
+  width:         80px;
+  height:        16px;
   background:    rgba(255, 230, 100, 0.7);
   border:        1px solid rgba(200, 175, 60, 0.3);
   border-radius: 2px;
 }
 
-/* Location header */
 .noteLocation {
   font-family:    'Caveat', cursive;
-  font-size:      12px;
+  font-size:      11px;
   font-weight:    700;
   color:          #7a6a52;
-  margin:         0 0 8px;
+  margin:         0 0 6px;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   border-bottom:  1px solid rgba(180,160,120,0.3);
-  padding-bottom: 6px;
+  padding-bottom: 5px;
 }
 
-/* Main text */
 .noteText {
   font-family: 'Caveat', cursive;
-  font-size:   clamp(15px, 1.4vw, 18px);
+  font-size:   clamp(13px, 1.3vw, 18px);
   font-weight: 500;
   color:       #3a2e1e;
   line-height: 1.55;
   margin:      0;
-
-  /* Clamp to ~6 lines */
   display:            -webkit-box;
   -webkit-line-clamp: 6;
   -webkit-box-orient: vertical;
   overflow:           hidden;
+}
+
+/* ════════════════════════════════════════════════
+   MOBILE  (≤ 600px)
+   ════════════════════════════════════════════════ */
+@media (max-width: 600px) {
+
+  /* Stage takes more height; header is taller on small screens */
+  .polaroidStage {
+    bottom: 32%;
+  }
+
+  /* On mobile only show ONE polaroid — the hero.
+     nth-child(2) and nth-child(3) are hidden so the
+     layout never overflows sideways.
+     The JS still loads siblings; we just don't show them. */
+  .polaroid:nth-child(2),
+  .polaroid:nth-child(3) {
+    display: none;
+  }
+
+  /* Single polaroid: wider and centered */
+  .polaroid {
+    width: min(72vw, 280px);
+    padding: 10px 10px 32px;
+  }
+
+  .polaroidCaption {
+    font-size: clamp(14px, 4vw, 18px);
+    padding-top: 8px;
+    min-height: 22px;
+  }
+
+  /* Scrapbook header: taller so text isn't clipped */
+  .scrapbookHeader {
+    height: 32%;
+  }
+
+  .scrapbookInner {
+    top: 22%;
+    padding: 8px 16px 12px;
+    gap: 4px;
+  }
+
+  .scrapbookTitle {
+    font-size: clamp(20px, 6vw, 32px);
+  }
+
+  .scrapbookSubtitle {
+    font-size: clamp(13px, 3.5vw, 18px);
+  }
+
+  .statItem {
+    font-size: clamp(13px, 3.5vw, 17px);
+  }
+
+  .outcomeBadge {
+    font-size: clamp(13px, 3.5vw, 17px);
+  }
+
+  /* Hide the journal note on mobile — too cramped */
+  .journalNote {
+    display: none;
+  }
+
+  /* Tape: smaller */
+  .scrapbookHeader::before,
+  .scrapbookHeader::after {
+    width:  28px;
+    height: 10px;
+    top:    16%;
+  }
 }

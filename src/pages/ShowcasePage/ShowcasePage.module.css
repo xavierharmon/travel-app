@@ -6,7 +6,7 @@
   inset:      0;
   background: #000;
   overflow:   hidden;
-  cursor:     none; /* hide cursor by default; controls bring it back */
+  cursor:     none;
 }
 
 /* ── Item container ──────────────────────────── */
@@ -48,16 +48,16 @@
 
 /* ── Controls overlay ────────────────────────── */
 .controls {
-  position:   absolute;
-  inset:      0;
-  z-index:    50;
-  display:    flex;
+  position:       absolute;
+  inset:          0;
+  z-index:        50;
+  display:        flex;
   flex-direction: column;
   justify-content: space-between;
-  pointer-events: none; /* children opt-in individually */
-  opacity:    0;
-  transition: opacity 0.4s ease;
-  cursor:     default;
+  pointer-events: none;
+  opacity:        0;
+  transition:     opacity 0.4s ease;
+  cursor:         default;
 }
 
 .controlsVisible {
@@ -102,6 +102,9 @@
   transition:      background var(--transition), color var(--transition);
   font-family:     var(--font-sans);
   line-height:     1;
+  /* Ensure minimum touch target */
+  min-width:       44px;
+  min-height:      44px;
 }
 
 .exitBtn:hover {
@@ -119,6 +122,8 @@
   padding:         var(--space-lg) var(--space-xl) var(--space-xl);
   background:      linear-gradient(to top, rgba(0,0,0,0.65), transparent);
   pointer-events:  auto;
+  /* Safe area for iPhones with home indicator */
+  padding-bottom:  max(var(--space-xl), env(safe-area-inset-bottom, 20px));
 }
 
 /* ── Nav buttons ─────────────────────────────── */
@@ -143,6 +148,8 @@
   transition:      background var(--transition), transform var(--transition-fast);
   font-family:     var(--font-sans);
   line-height:     1;
+  /* iOS tap highlight */
+  -webkit-tap-highlight-color: transparent;
 }
 
 .navBtn:hover {
@@ -155,10 +162,10 @@
 }
 
 .pauseBtn {
-  width:      64px;
-  height:     64px;
-  font-size:  22px;
-  background: rgba(99, 102, 241, 0.3);
+  width:        64px;
+  height:       64px;
+  font-size:    22px;
+  background:   rgba(99, 102, 241, 0.3);
   border-color: rgba(99, 102, 241, 0.5);
 }
 
@@ -168,9 +175,9 @@
 
 /* ── Counter ─────────────────────────────────── */
 .counter {
-  font-size:   var(--font-size-xs);
-  color:       rgba(255, 255, 255, 0.45);
-  font-weight: 600;
+  font-size:      var(--font-size-xs);
+  color:          rgba(255, 255, 255, 0.45);
+  font-weight:    600;
   letter-spacing: 0.08em;
 }
 
@@ -227,4 +234,52 @@
   font-weight:   600;
   cursor:        pointer;
   font-family:   var(--font-sans);
+  min-height:    44px;
+}
+
+/* ════════════════════════════════════════════════
+   MOBILE  (≤ 600px)
+   ════════════════════════════════════════════════ */
+@media (max-width: 600px) {
+
+  /* Restore cursor on touch devices */
+  .page {
+    cursor: default;
+  }
+
+  /* Top bar: tighter padding */
+  .topBar {
+    padding: 10px 14px;
+  }
+
+  .showcaseLabel {
+    font-size: 11px;
+  }
+
+  /* Bottom bar: tighter, still safe-area aware */
+  .bottomBar {
+    padding: 10px 16px max(16px, env(safe-area-inset-bottom, 16px));
+    gap:     6px;
+  }
+
+  /* Slightly smaller prev/next, same pause */
+  .navBtn {
+    width:     46px;
+    height:    46px;
+    font-size: 22px;
+  }
+
+  .pauseBtn {
+    width:     56px;
+    height:    56px;
+    font-size: 20px;
+  }
+
+  .navGroup {
+    gap: 12px;
+  }
+
+  .counter {
+    font-size: 10px;
+  }
 }
