@@ -3,6 +3,7 @@ export const STORAGE_KEY     = "road_trip_memories_v1";
 export const ROUTE_CACHE_KEY = "road_trip_routes_v1";
 
 export const VIEWS = {
+  DASHBOARD: "dashboard",
   LIST:      "list",
   EDIT:      "edit",
   MAP:       "map",

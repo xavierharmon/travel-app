@@ -1,6 +1,7 @@
 // src/App.jsx
 import { useState } from "react";
 import { VIEWS } from "@/constants";
+import DashboardPage   from "@/pages/DashboardPage";
 import TripListPage    from "@/pages/TripListPage";
 import TripEditorPage  from "@/pages/TripEditorPage";
 import MapPage         from "@/pages/MapPage";
@@ -26,11 +27,12 @@ function isTVDevice() {
 }
 
 export default function App() {
-  const [view,         setView]         = useState(isTVDevice() ? VIEWS.SHOWCASE : VIEWS.LIST);
+  const [view,         setView]         = useState(isTVDevice() ? VIEWS.SHOWCASE : VIEWS.DASHBOARD);
   const [selectedTrip, setSelectedTrip] = useState(null);
   const [selectedGame, setSelectedGame] = useState(null);
   const [selectedMemory, setSelectedMemory] = useState(null);
 
+  function openDashboard()                { setSelectedTrip(null); setSelectedGame(null); setSelectedMemory(null); setView(VIEWS.DASHBOARD); }
   function openEditor(trip = null)         { setSelectedTrip(trip); setView(VIEWS.EDIT); }
   function openMap(trip)                   { setSelectedTrip(trip); setView(VIEWS.MAP); }
   function openGames()                     { setView(VIEWS.GAMES); }
@@ -51,26 +53,36 @@ export default function App() {
       {/* AutoSyncProvider sits outside page routing so it persists across all views */}
       <AutoSyncProvider />
 
+      {view === VIEWS.DASHBOARD && (
+        <DashboardPage
+          onNewTrip={() => openEditor(null)}
+          onViewTrips={goToList}
+          onViewGames={openGames}
+          onViewMemories={openMemories}
+          onViewShowcase={openShowcase}
+          onViewHistory={() => setView(VIEWS.HISTORY)}
+        />
+      )}
       {view === VIEWS.EDIT && (
-        <TripEditorPage trip={selectedTrip} onBack={goToList} onViewMap={openMap} />
+        <TripEditorPage trip={selectedTrip} onBack={openDashboard} onViewMap={openMap} />
       )}
       {view === VIEWS.MAP && (
-        <MapPage trip={selectedTrip} onBack={goToList} onEdit={() => openEditor(selectedTrip)} />
+        <MapPage trip={selectedTrip} onBack={openDashboard} onEdit={() => openEditor(selectedTrip)} />
       )}
       {view === VIEWS.HISTORY && (
-        <HistoryMapPage onBack={goToList} />
+        <HistoryMapPage onBack={openDashboard} />
       )}
       {view === VIEWS.GAMES && (
-        <GamesListPage onNewGame={() => openGameEditor(null)} onEditGame={openGameEditor} onBack={goToList} />
+        <GamesListPage onNewGame={() => openGameEditor(null)} onEditGame={openGameEditor} onBack={openDashboard} />
       )}
       {view === VIEWS.GAME_EDIT && (
         <GameEditorPage game={selectedGame} onBack={openGames} />
       )}
       {view === VIEWS.SHOWCASE && (
-        <ShowcasePage onBack={goToList} />
+        <ShowcasePage onBack={openDashboard} />
       )}
       {view === VIEWS.MEMORIES && (
-        <MemoryListPage onNewMemory={() => openMemoriesEditor(null)} onEditMemory={openMemoriesEditor} onBack={goToList}/>
+        <MemoryListPage onNewMemory={() => openMemoriesEditor(null)} onEditMemory={openMemoriesEditor} onBack={openDashboard}/>
       )}
       {view === VIEWS.MEMORIES_EDIT && (
         <MemoriesEditorPage memory={selectedMemory} onBack={openMemories} />
@@ -84,6 +96,7 @@ export default function App() {
           onViewGames={openGames}
           onViewShowcase={openShowcase}
           onViewMemories={openMemories}
+          onViewDashboard={openDashboard}
         />
       )}
     </>

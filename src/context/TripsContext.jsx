@@ -2,6 +2,7 @@
 import { createContext, useContext, useState, useEffect, useCallback } from "react";
 import { loadTrips, saveTrips } from "@/utils/storage";
 import { generateId } from "@/utils/imageHelpers";
+import { geocodeAllTrips } from "@/utils/geocodeTripData";
 
 const TripsContext = createContext(null);
 
@@ -68,10 +69,23 @@ export function TripsProvider({ children }) {
     stops:       [],
   }), []);
 
+  const geocodeAndUpdateTrips = useCallback(async () => {
+    try {
+      const geocodedTrips = await geocodeAllTrips(trips);
+      setTrips(geocodedTrips);
+      saveTrips(geocodedTrips);
+      notifyDataSaved();
+      return geocodedTrips;
+    } catch (err) {
+      console.error("Error geocoding trips:", err);
+      throw err;
+    }
+  }, [trips]);
+
   return (
     <TripsContext.Provider value={{
       trips, loading, error,
-      addTrip, updateTrip, deleteTrip, createBlankTrip,
+      addTrip, updateTrip, deleteTrip, createBlankTrip, geocodeAndUpdateTrips,
     }}>
       {children}
     </TripsContext.Provider>

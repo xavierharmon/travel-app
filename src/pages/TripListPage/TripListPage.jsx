@@ -67,14 +67,16 @@ export default function TripListPage({
   onViewGames,
   onViewShowcase,
   onViewMemories,
+  onViewDashboard,
 }) {
-  const { trips, loading, error, deleteTrip } = useTrips();
-  const [showBackup,    setShowBackup]    = useState(false);
-  const [sortBy,        setSortBy]        = useState("date-newest");
-  const [storageUsage,  setStorageUsage]  = useState(null);
-  const [cacheStats,    setCacheStats]    = useState(null);
-  const [photoStats,    setPhotoStats]    = useState(null);
-  const [showBreakdown, setShowBreakdown] = useState(false);
+  const { trips, loading, error, deleteTrip, geocodeAndUpdateTrips } = useTrips();
+  const [showBackup,       setShowBackup]       = useState(false);
+  const [sortBy,           setSortBy]           = useState("date-newest");
+  const [storageUsage,     setStorageUsage]     = useState(null);
+  const [cacheStats,       setCacheStats]       = useState(null);
+  const [photoStats,       setPhotoStats]       = useState(null);
+  const [showBreakdown,    setShowBreakdown]    = useState(false);
+  const [isGeocoding,      setIsGeocoding]      = useState(false);
 
   useEffect(() => {
     setStorageUsage(getStorageUsage());
@@ -101,6 +103,24 @@ export default function TripListPage({
       clearAllStoredRoutes();
       setCacheStats(getRouteCacheStats());
       setStorageUsage(getStorageUsage());
+    }
+  }
+
+  async function handleGeocodeTrips() {
+    if (window.confirm(
+      "Geocode all trips to extract location data? This will look up " +
+      "the state/country for each trip location using coordinates."
+    )) {
+      try {
+        setIsGeocoding(true);
+        await geocodeAndUpdateTrips();
+        alert("✓ All trips geocoded successfully!");
+      } catch (err) {
+        console.error("Geocoding error:", err);
+        alert("Error during geocoding. Check console for details.");
+      } finally {
+        setIsGeocoding(false);
+      }
     }
   }
 
@@ -131,6 +151,9 @@ export default function TripListPage({
                 : `${trips.length} trip${trips.length !== 1 ? "s" : ""} saved`}
             </p>
             <div className={styles.actionBtns}>
+              <Button variant="secondary" onClick={onViewDashboard} size="sm">
+                📊 Dashboard
+              </Button>
               <Button variant="secondary" onClick={() => setShowBackup(true)} size="sm">
                 🗄️ Backup
               </Button>
@@ -145,6 +168,14 @@ export default function TripListPage({
               </Button>
               <Button variant="secondary" onClick={onViewMemories} size="sm">
                 📸 Memories
+              </Button>
+              <Button 
+                variant="secondary" 
+                onClick={handleGeocodeTrips} 
+                size="sm"
+                disabled={isGeocoding}
+              >
+                {isGeocoding ? "🌍 Geocoding…" : "🌍 Geocode"}
               </Button>
               <Button onClick={onNewTrip} size="sm">
                 + New Trip
