@@ -91,6 +91,15 @@ export default function DashboardPage({
                   <div className={styles.statLabel}>Total Miles</div>
                 </div>
               </div>
+              
+              {/* Sports Games */}
+              <div className={styles.statCard}>
+                <div className={styles.statIcon}>🏅</div>
+                <div className={styles.statContent}>
+                  <div className={styles.statValue}>{stats.games.totalGames}</div>
+                  <div className={styles.statLabel}>Sports Games</div>
+                </div>
+              </div>
             </section>
 
             {/* ── Travel Modes Breakdown ───────────────────────── */}
@@ -123,6 +132,8 @@ export default function DashboardPage({
                 </div>
               </section>
             )}
+
+            
           </>
         )}
       </main>
