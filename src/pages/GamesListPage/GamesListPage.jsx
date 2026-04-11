@@ -1,7 +1,7 @@
 // src/pages/GamesListPage/GamesListPage.jsx
 import { useState } from "react";
 import styles from "./GamesListPage.module.css";
-import { useGames } from "@/context/GamesContext";
+import { useGames } from "@/hooks/useGames";
 import Button from "@/components/common/Button";
 import { usePhotoUrls } from "@/hooks/usePhotoUrls";
 import { useLogoUrls } from "@/hooks/useLogoUrls";

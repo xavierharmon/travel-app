@@ -52,4 +52,28 @@
   --font-size-lg:  18px;
   --font-size-xl:  22px;
   --font-size-2xl: 26px;
+
+  /* Semantic Component Variables */
+
+  /* Card layouts */
+  --card-padding: var(--space-md);
+  --card-gap: var(--space-sm);
+  --card-border-radius: var(--radius-md);
+  --card-shadow: var(--shadow-md);
+
+  /* Editor forms */
+  --form-field-gap: var(--space-md);
+  --form-section-margin: var(--space-lg);
+  --form-input-padding: var(--space-sm) var(--space-md);
+  --form-input-radius: var(--radius-md);
+
+  /* Button layouts */
+  --button-group-gap: var(--space-sm);
+  --button-padding-sm: var(--space-xs) var(--space-sm);
+  --button-padding-md: var(--space-sm) var(--space-md);
+  --button-padding-lg: var(--space-md) var(--space-lg);
+
+  /* Photo displays */
+  --photo-grid-gap: var(--space-sm);
+  --photo-strip-height: 80px;
 }

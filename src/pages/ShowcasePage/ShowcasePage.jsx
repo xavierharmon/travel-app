@@ -7,7 +7,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import styles from "./ShowcasePage.module.css";
 import { useTrips } from "@/hooks/useTrips";
-import { useGames } from "@/context/GamesContext";
+import { useGames } from "@/hooks/useGames";
 import { useSlideshow } from "@/hooks/useSlideshow";
 import SlideshowItem from "@/components/Showcase/SlideshowItem";
 import { SLIDESHOW_INTERVAL_MS } from "@/constants";

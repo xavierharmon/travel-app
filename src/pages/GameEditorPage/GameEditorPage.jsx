@@ -1,7 +1,7 @@
 // src/pages/GameEditorPage/GameEditorPage.jsx
 import { useState } from "react";
 import styles from "./GameEditorPage.module.css";
-import { useGames } from "@/context/GamesContext";
+import { useGames } from "@/hooks/useGames";
 import { generateId } from "@/utils/imageHelpers";
 import Button from "@/components/common/Button";
 import PhotoGrid from "@/components/common/PhotoGrid";
